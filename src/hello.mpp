@@ -1,0 +1,13 @@
+module;
+#include <iostream>
+
+export module hello;
+
+export class Hello {
+public:
+	Hello() {}
+
+	void hello() {
+		printf("Hello!\n");
+	}
+};
