@@ -27,6 +27,8 @@
 						pkg-config
 						cmake
 						git
+						jq
+						moreutils
 						
 						llvmPackages_22.clang-tools
 						llvmPackages_22.clang

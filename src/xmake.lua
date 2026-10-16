@@ -2,8 +2,9 @@ target("hremu")
 	set_kind("binary")
 
 	add_files(
-		"*.cpp",
-		"*.mpp"
+		"main.cpp",
+		"mem/*.cpp",
+		"cpu/*.cpp"
 	)
 
 	add_includedirs(".")
