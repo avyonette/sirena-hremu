@@ -40,7 +40,7 @@ typedef struct CpuInstruction {
 	u8 os;
 	u8 op;
 
-	bool advance_next;
+	bool auto_advance;
 
 	union {
 		RInstruction r;
@@ -56,5 +56,4 @@ typedef bool (*OpExecute)(CpuInstruction* inst);
 typedef struct OpSetEntry {
 	CpuInstructionType type;
 	OpExecute exec;
-	bool advance_next;
 } OpSetEntry;

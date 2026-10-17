@@ -24,6 +24,7 @@ void cu_init();
 void cu_step();
 
 void cu_raise_int(u8 id, word rfi0, word rfi1);
+void cu_enable_irh(u8 id, bool enable);
 
 word cu_read_reg(u8 idx);
-bool cu_write_reg(u8 idx, word value);
+void cu_write_reg(u8 idx, word value);

@@ -193,7 +193,7 @@ p_addr h2g_phy_addr(void* address) {
 	// TODO SPPBC
 	H2G_BRANCH(PMM0_PMM1_BASE, l1_pmm.ptr, l1_pmm.size);
 	H2G_BRANCH(PMM0_SYSTEM_BASE, system_ram.ptr, system_ram.size);
-	
+
 	return 0;
 }
 
@@ -201,5 +201,13 @@ void g2h_read32(p_addr address, void* out, word size) {
 	for(word i = 0; i < size / sizeof(word); i++) {
 		word data = mmu_mread32(address + i * sizeof(word));
 		memmove(out + i * sizeof(word), &data, sizeof(word));
+	}
+}
+
+void h2g_write32(void* src, p_addr out, word size) {
+	for(word i = 0; i < size / sizeof(word); i++) {
+		word data = 0;
+		memcpy(&data, src + i * sizeof(word), sizeof(word));
+		mmu_mwrite32(out + i * sizeof(word), data);
 	}
 }

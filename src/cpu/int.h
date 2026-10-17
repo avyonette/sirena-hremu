@@ -3,6 +3,8 @@
 #include <types.h>
 
 #define INT_MAX 0xFF
+#define INT_USER_MIN 0x20
+#define INT_USER_MAX INT_MAX
 
 #define INT_UDO 0x01
 #define INT_DBG 0x02
@@ -26,6 +28,7 @@
 #define INT_GPE_0_WRONG_PRIVILEGE 0x00
 #define INT_GPE_0_EXEC_ON_NO_EXEC 0x01
 #define INT_GPE_0_WRITE_ON_READ_ONLY 0x02
+#define INT_GPE_0_UNDEFINED_PRIVILEGE 0x03
 
 #define INT_GPE_1(cpl, npl) (cpl & 0b11) | ((npl & 0b11) << 2)
 

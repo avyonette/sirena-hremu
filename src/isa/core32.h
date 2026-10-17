@@ -28,21 +28,23 @@
 #define CORE32_JAE_JAE 0x00
 #define CORE32_JAE_JANE 0x01
 #define CORE32_JAE_JALT 0x02
-#define CORE32_JAE_JALTU 0x03
+//#define CORE32_JAE_JALTU 0x03
 #define CORE32_JAE_JAGE 0x04
-#define CORE32_JAE_JAGEU 0x05
+//#define CORE32_JAE_JAGEU 0x05
 #define CORE32_JR 0x09
 #define CORE32_JRE 0x0A
 #define CORE32_JRNE 0x0B
 #define CORE32_JRLT 0x0C
-#define CORE32_JRLTU 0x0D
+//#define CORE32_JRLTU 0x0D
 #define CORE32_JRGE 0x0E
-#define CORE32_JRGEU 0x0F
+//#define CORE32_JRGEU 0x0F
 #define CORE32_CALLA 0x10
 #define CORE32_CALLR 0x11
 #define CORE32_RET 0x12
 
-#define CORE32_CMP 0x13
+#define CORE32_CMPU 0x13
+#define CORE32_CMPU_CMPU 0x00
+#define CORE32_CMPU_CMPS 0x01
 #define CORE32_ADD 0x14
 #define CORE32_ADD_ADD 0x00
 #define CORE32_ADD_SUB 0x01
@@ -65,6 +67,18 @@
 #define CORE32_INT 0x1A
 #define CORE32_INTI 0x1B
 #define CORE32_INTM 0x1C
-#define CORE32_RETI 0x1E
+#define CORE32_RETI 0x1D
+
+#define CORE32_MCW 0x1E
+#define CORE32_MCW_MCW 0x00
+#define CORE32_MCW_MCH 0x01
+#define CORE32_MCW_MCB 0x02
+
+typedef enum CompareResultBitmask {
+	EQUAL = 1 << 0,
+	NOT_EQUAL = 1 << 1,
+	LESS_THAN = 1 << 2,
+	GREATER_THAN = 1 << 3
+} CompareResultBitmask;
 
 extern OpSetEntry core32_opset[OPSET_SIZE];

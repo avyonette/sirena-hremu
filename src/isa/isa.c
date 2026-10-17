@@ -22,11 +22,9 @@ bool isa_decode(CpuInstruction* inst, word data) {
 	switch(os) {
 		case CORE32_OPSET: {
 			inst->type = core32_opset[op].type;
-			inst->advance_next = core32_opset[op].advance_next;
 			break;
 		}
 		default: {
-			cu_raise_int(INT_UDO, INT_UDO_0(op, os), 0);
 			return false;
 		}
 	}
@@ -57,7 +55,6 @@ bool isa_decode(CpuInstruction* inst, word data) {
 			break;
 		}
 		default: {
-			cu_raise_int(INT_UDO, INT_UDO_0(op, os), 0);
 			return false;
 		};
 	}
@@ -66,12 +63,19 @@ bool isa_decode(CpuInstruction* inst, word data) {
 }
 
 bool isa_execute(CpuInstruction* inst) {
+	inst->auto_advance = true; // default advance
+
 	switch(inst->os) {
 		case CORE32_OPSET: {
-			return core32_opset[inst->op].exec(inst);
+			if(!core32_opset[inst->op].exec(inst)) {
+				inst->auto_advance = true; // restore advance
+				return false;
+			}
+			break;
 		}
+		default:
+			return false;
 	}
 
-	cu_raise_int(INT_UDO, INT_UDO_0(inst->op, inst->os), 0);
-	return false;
+	return true;
 }

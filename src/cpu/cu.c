@@ -1,4 +1,5 @@
 #include <string.h>
+#include "cpu/int.h"
 #include "log.h"
 #include "reg.h"
 #include "cu.h"
@@ -35,17 +36,33 @@ void cu_init() {
 }
 
 void cu_step() {
+begin: ;
+	// check if current PL is valid
+	u8 cpl = cu_read_reg(REG_RPL);
+
+	if(cpl != PL_0 && cpl != PL_1) {
+		cu_raise_int(INT_GPE, INT_GPE_0_UNDEFINED_PRIVILEGE, 0);
+		goto interrupts; // if PL is invalid, skip the cycle entirely
+	}
+
 fetch: ;
 	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
 
 decode: ;
 	CpuInstruction inst;
-	isa_decode(&inst, inst_data);
+
+	if(!isa_decode(&inst, inst_data)) {
+		cu_raise_int(INT_UDO, INT_UDO_0(inst.op, inst.os), 0);
+		goto interrupts; // skip execute
+	}
 
 	zlog_info(lc_emu, "decoded instr op %d", inst.op);
 
 execute: ;
-	isa_execute(&inst);
+	if(!isa_execute(&inst)) {
+		cu_raise_int(INT_UDO, INT_UDO_0(inst.op, inst.os), 0);
+		goto interrupts;
+	}
 
 interrupts: ;
 	// handle interrupts
@@ -66,7 +83,7 @@ interrupts: ;
 
 					zlog_info(lc_cpu, "handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
 
-					goto fetch; // need to handle this interrupt now
+					goto begin; // need to handle this interrupt now
 				}
 			}
 			
@@ -75,7 +92,7 @@ interrupts: ;
 	}
 
 advance: ;
-	if(inst.advance_next) {
+	if(inst.auto_advance) {
 		cu_write_reg(REG_RIP, cu_read_reg(REG_RIP) + sizeof(word));
 	}
 }
@@ -91,6 +108,16 @@ void cu_raise_int(u8 id, word rfi0, word rfi1) {
 		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi0), rfi0);
 		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi1), rfi1);
 	}
+}
+
+void cu_enable_irh(u8 id, bool enable) {
+	if(!rrap) return;
+
+	InterruptRoutineArrayEntry irae;
+	g2h_read32(rrap + (id * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
+
+	irae.en = enable;
+	h2g_write32(&irae, rrap + (id * sizeof(InterruptRoutineArrayEntry)), sizeof(InterruptRoutineArrayEntry));
 }
 
 word cu_read_reg(u8 idx) {
@@ -111,27 +138,28 @@ word cu_read_reg(u8 idx) {
 	}
 }
 
-bool cu_write_reg(u8 idx, word value) {
+void cu_write_reg(u8 idx, word value) {
 	switch(idx) {
 		case REG_RFP: {
-			PL_CHECK_RET(PL_1, false)
+			PL_CHECK(PL_1)
 			rfp = value;
+			break;
 		}
 		case REG_RRAP: {
-			PL_CHECK_RET(PL_1, false)
+			PL_CHECK(PL_1)
 			rrap = value;
+			break;
 		}
 		case REG_RZ: {
 			cu_raise_int(INT_IOP, 0, 0);
-			return false;
+			break;
 		}
 		case REG_RPDP:
-			PL_CHECK_RET(PL_1, false)
+			PL_CHECK(PL_1)
 		default: {
 			assert(rfp);
 			mmu_mwrite32(rfp + (idx * sizeof(word)), value);
+			break;
 		}
 	}
-
-	return true;
 }

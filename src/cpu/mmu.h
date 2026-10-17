@@ -44,5 +44,6 @@ void* g2h_phy_addr(p_addr address);
 // does the same as the above but in reverse
 p_addr h2g_phy_addr(void* address);
 
-// similar to above but reads into C variables directly
+// similar to above but into/from host memory directly and uses MMU
 void g2h_read32(p_addr address, void* out, word size);
+void h2g_write32(void* src, p_addr out, word size);
