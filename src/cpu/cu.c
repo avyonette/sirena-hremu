@@ -31,7 +31,7 @@ void cu_init() {
 	rrap = 0x0;
 }
 
-void step() {
+void cu_step() {
 fetch: ;
 	word instruction = mmu_mread32(mmu_tavp(rfp->rip, 'x'));
 
@@ -68,7 +68,7 @@ advance: ;
 	rfp->rip += sizeof(word);
 }
 
-void raise_int(u8 id, word rfi0, word rfi1) {
+void cu_raise_int(u8 id, word rfi0, word rfi1) {
 	irq_map[id] = true;
 	
 	if(rrap) {
