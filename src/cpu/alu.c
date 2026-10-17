@@ -124,15 +124,15 @@ u32 alu_ashr32(u32 a, u32 n) {
 // Retrieved 2026-10-17, License - CC BY-SA 3.0
 #define SIGNEX(v, sb) ((v) | (((v) & (1 << (sb))) ? ~((1 << (sb))-1) : 0))
 
-u32 alu_sext17(u32 a) {
-	return SIGNEX(a, 16);
+u32 alu_signe18(u32 a) {
+	return SIGNEX(a, 17);
 }
 
-u32 alu_sext16(u32 a) {
+u32 alu_signe16(u32 a) {
 	return SIGNEX(a, 15);
 }
 
-u32 alu_sext8(u32 a) {
+u32 alu_signe8(u32 a) {
 	return SIGNEX(a, 7);
 }
 
@@ -141,10 +141,10 @@ u32 alu_sext8(u32 a) {
 	but might as well make sure as the spec says "Zero-extend from bit X to 31"
 	so input a might not necessarily be a u8 or u16
 */
-u32 alu_zext16(u32 a) {
+u32 alu_zeroe16(u32 a) {
 	return a & 0xFFFF;
 }
 
-u32 alu_zext8(u32 a) {
+u32 alu_zeroe8(u32 a) {
 	return a & 0xFF;
 }

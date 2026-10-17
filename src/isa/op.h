@@ -22,8 +22,8 @@ typedef struct IInstruction {
 typedef struct JInstruction {
 	u8 os : 4;
 	u8 op : 5;
-	u32 tg : 17;
-	u8 rc : 6;
+	u32 tg : 18;
+	u8 rc : 5;
 } JInstruction;
 #pragma pack(pop)
 

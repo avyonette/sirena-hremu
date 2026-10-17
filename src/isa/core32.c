@@ -25,25 +25,25 @@ bool ldw(CpuInstruction* inst) {
 		case CORE32_LDW_LDHZ: {
 			word source = cu_read_reg(inst->r.ra);
 			word data = mmu_mread16(source);
-			cu_write_reg(inst->r.ds, alu_zext16(data));
+			cu_write_reg(inst->r.ds, alu_zeroe16(data));
 			return true;
 		}
 		case CORE32_LDW_LDHS: {
 			word source = cu_read_reg(inst->r.ra);
 			word data = mmu_mread16(source);
-			cu_write_reg(inst->r.ds, alu_sext16(data));
+			cu_write_reg(inst->r.ds, alu_signe16(data));
 			return true;
 		}
 		case CORE32_LDW_LDBZ: {
 			word source = cu_read_reg(inst->r.ra);
 			word data = mmu_mread8(source);
-			cu_write_reg(inst->r.ds, alu_zext8(data));
+			cu_write_reg(inst->r.ds, alu_zeroe8(data));
 			return true;
 		}
 		case CORE32_LDW_LDBS: {
 			word source = cu_read_reg(inst->r.ra);
 			word data = mmu_mread8(source);
-			cu_write_reg(inst->r.ds, alu_sext8(data));
+			cu_write_reg(inst->r.ds, alu_signe8(data));
 			return true;
 		}
 	}
@@ -52,24 +52,24 @@ bool ldw(CpuInstruction* inst) {
 }
 
 bool lvi(CpuInstruction* inst) {
-	cu_write_reg(inst->i.ds, alu_sext16(inst->i.vl));
+	cu_write_reg(inst->i.ds, alu_signe16(inst->i.vl));
 	return true;
 }
 
 bool lli(CpuInstruction* inst) {
 	switch(inst->i.ff) {
 		case CORE32_LLI_LLI: {
-			word value = inst->i.vl & 0xFFFF0000;
-			word destination = cu_read_reg(inst->i.ds) & 0x0000FFFF;
+			word value = inst->i.vl;
+			word destination = cu_read_reg(inst->i.ds) & 0xFFFF0000;
 
-			cu_write_reg(inst->i.ds, value | destination);
+			cu_write_reg(inst->i.ds, destination | value);
 			return true;
 		}
 		case CORE32_LLI_LUI: {
-			word value = inst->i.vl & 0x0000FFFF;
+			word value = inst->i.vl << 16;
 			word destination = cu_read_reg(inst->i.ds) & 0xFFFF0000;
 
-			cu_write_reg(inst->i.ds, value | destination);
+			cu_write_reg(inst->i.ds, destination | value);
 			return true;
 		}
 	}
@@ -166,7 +166,7 @@ bool jae(CpuInstruction* inst) {
 bool jr(CpuInstruction* inst) {
 	inst->auto_advance = false;
 
-	i32 rel = alu_sext17(inst->j.tg);
+	i32 rel = alu_signe18(inst->j.tg);
 	word curr = cu_read_reg(REG_RIP);
 	u32 res = curr + rel;
 
@@ -175,12 +175,12 @@ bool jr(CpuInstruction* inst) {
 }
 
 #define JR_CMP(pass) \
-	word cmp = cu_read_reg(inst->r.ra); \
+	word cmp = cu_read_reg(inst->j.rc); \
 \
 	if(pass) { \
 		word current = cu_read_reg(REG_RIP); \
 		word target = cu_read_reg(inst->j.tg); \
-		cu_write_reg(REG_RIP, current + alu_sext17(target)); \
+		cu_write_reg(REG_RIP, current + alu_signe18(target)); \
 \
 		inst->auto_advance = false; \
 	} else { \
@@ -223,7 +223,7 @@ bool callr(CpuInstruction* inst) {
 	word target = cu_read_reg(inst->r.ds);
 
 	cu_write_reg(REG_RTP, current + 4);
-	cu_write_reg(REG_RIP, current + alu_sext17(target));
+	cu_write_reg(REG_RIP, current + alu_signe18(target));
 	return true;
 }
 
@@ -297,7 +297,7 @@ bool add(CpuInstruction* inst) {
 bool addi(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 b = inst->i.vl;
-	u32 result = alu_iadd32c(a, alu_sext16(b));
+	u32 result = alu_iadd32c(a, alu_signe16(b));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -367,7 +367,7 @@ bool shl(CpuInstruction* inst) {
 bool shli(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_lshl32(a, alu_zext16(n));
+	u32 result = alu_lshl32(a, alu_zeroe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -376,7 +376,7 @@ bool shli(CpuInstruction* inst) {
 bool shri(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_lshr32(a, alu_zext16(n));
+	u32 result = alu_lshr32(a, alu_zeroe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -385,7 +385,7 @@ bool shri(CpuInstruction* inst) {
 bool shsri(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_ashr32(a, alu_zext16(n));
+	u32 result = alu_ashr32(a, alu_zeroe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;

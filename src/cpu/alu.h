@@ -13,8 +13,8 @@ u32 alu_lshl32(u32 a, u32 n);
 u32 alu_lshr32(u32 a, u32 n);
 u32 alu_ashr32(u32 a, u32 n);
 
-u32 alu_sext17(u32 a);
-u32 alu_sext16(u32 a);
-u32 alu_sext8(u32 a);
-u32 alu_zext16(u32 a);
-u32 alu_zext8(u32 a);
+u32 alu_signe18(u32 a);
+u32 alu_signe16(u32 a);
+u32 alu_signe8(u32 a);
+u32 alu_zeroe16(u32 a);
+u32 alu_zeroe8(u32 a);
