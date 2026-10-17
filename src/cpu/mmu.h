@@ -43,3 +43,6 @@ void mmu_mwrite32(p_addr address, word data);
 void* g2h_phy_addr(p_addr address);
 // does the same as the above but in reverse
 p_addr h2g_phy_addr(void* address);
+
+// similar to above but reads into C variables directly
+void g2h_read32(p_addr address, void* out, word size);

@@ -13,6 +13,8 @@
 #define INT_MAE 0x07
 #define INT_GPE 0x08
 
+#define INT_UDO_0(op, os) (os & 0b1111) | ((op & 0b11111) << 4)
+
 #define INT_PLE_1_NOT_FOUND 0x00
 
 #define INT_MAE_1_UNKNOWN_READ 0x00

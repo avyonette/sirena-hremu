@@ -3,10 +3,12 @@
 #include "paging.h"
 #include "mem/ram.h"
 #include "mem/rom.h"
+#include "log.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define READ_REGION(address, size) \
-	if(address >= PMM0_R0_BASE && address < PMM0_R1_LIMIT) { \
+	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
 		return 0; \
 	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
@@ -26,7 +28,7 @@
 	}
 
 #define WRITE_REGION(address, size, data) \
-	if(address >= PMM0_R0_BASE && address < PMM0_R1_LIMIT) { \
+	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
 	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
 		mem_write##size(&user_ram, address - PMM0_USER_BASE, data); \
@@ -48,8 +50,10 @@ HardwareMemory l1_pmm = {0};
 p_addr mmu_tavp(v_addr address, char purpose) {
 	assert(purpose == 'r' || purpose == 'w' || purpose == 'x');
 
+	word rpdp = cu_read_reg(REG_RPDP);
+
 	// 4.6.7: rpdp == 0 -> paging disabled
-	if(rfp->rpdp == 0) {
+	if(rpdp == 0) {
 		return address;
 	}
 
@@ -65,8 +69,8 @@ p_addr mmu_tavp(v_addr address, char purpose) {
 	assert(l1_pd_index < PD_SIZE);
 	assert(pt_index < PT_SIZE);
 
-	PageDirectory* l0_pd = g2h_phy_addr(rfp->rpdp);
-	assert(pdp);
+	PageDirectory* l0_pd = g2h_phy_addr(rpdp);
+	assert(l0_pd);
 
 	PageDirectoryEntry* l0_pd_entry = &l0_pd->entries[l0_pd_index];
 
@@ -95,18 +99,20 @@ p_addr mmu_tavp(v_addr address, char purpose) {
 		return 0;
 	}
 
-	if(rfp->rpl != pdesc->pl) {
-		cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(rfp->rpl, pdesc->pl));
+	word rpl = cu_read_reg(REG_RPL);
+
+	if(rpl != pdesc->pl) {
+		cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(rpl, pdesc->pl));
 		return 0;
 	}
 
 	if(purpose == 'w' && !pdesc->rw) {
-		cu_raise_int(INT_GPE, INT_GPE_0_WRITE_ON_READ_ONLY, INT_GPE_1(rfp->rpl, pdesc->pl));
+		cu_raise_int(INT_GPE, INT_GPE_0_WRITE_ON_READ_ONLY, INT_GPE_1(rpl, pdesc->pl));
 		return 0;
 	}
 
 	if(purpose == 'x' && !pdesc->ex) {
-		cu_raise_int(INT_GPE, INT_GPE_0_EXEC_ON_NO_EXEC, INT_GPE_1(rfp->rpl, pdesc->pl));
+		cu_raise_int(INT_GPE, INT_GPE_0_EXEC_ON_NO_EXEC, INT_GPE_1(rpl, pdesc->pl));
 		return 0;
 	}
 
@@ -118,7 +124,7 @@ byte mmu_mread8(p_addr address) {
 }
 
 half_word mmu_mread16(p_addr address) {
-	if((address & 0xF) != 0) {
+	if((address & 0b1) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
 		return 0;
 	}
@@ -127,7 +133,7 @@ half_word mmu_mread16(p_addr address) {
 }
 
 word mmu_mread32(p_addr address) {
-	if((address & 0x1F) != 0) {
+	if((address & 0b11) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
 		return 0;
 	}
@@ -140,7 +146,7 @@ void mmu_mwrite8(p_addr address, byte data) {
 }
 
 void mmu_mwrite16(p_addr address, half_word data) {
-	if((address & 0xF) != 0) {
+	if((address & 0b1) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
 		return;
 	}
@@ -149,7 +155,7 @@ void mmu_mwrite16(p_addr address, half_word data) {
 }
 
 void mmu_mwrite32(p_addr address, word data) {
-	if((address & 0x1F) != 0) {
+	if((address & 0b11) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
 		return;
 	}
@@ -187,7 +193,13 @@ p_addr h2g_phy_addr(void* address) {
 	// TODO SPPBC
 	H2G_BRANCH(PMM0_PMM1_BASE, l1_pmm.ptr, l1_pmm.size);
 	H2G_BRANCH(PMM0_SYSTEM_BASE, system_ram.ptr, system_ram.size);
-
-	assert(false);
+	
 	return 0;
+}
+
+void g2h_read32(p_addr address, void* out, word size) {
+	for(word i = 0; i < size / sizeof(word); i++) {
+		word data = mmu_mread32(address + i * sizeof(word));
+		memmove(out + i * sizeof(word), &data, sizeof(word));
+	}
 }

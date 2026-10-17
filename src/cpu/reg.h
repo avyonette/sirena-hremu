@@ -1,6 +1,41 @@
 #pragma once
 #include <arch_types.h>
 
+// TODO write in the cpu spec how these are assigned (they're assigned in order of the frame struct)
+#define REG_R0 0x00
+#define REG_R1 0x01
+#define REG_R2 0x02
+#define REG_R3 0x03
+#define REG_R4 0x04
+#define REG_R5 0x05
+#define REG_R6 0x06
+#define REG_R7 0x07
+#define REG_R8 0x08
+#define REG_R9 0x09
+#define REG_R10 0x0A
+#define REG_R11 0x0B
+#define REG_R12 0x0C
+#define REG_R13 0x0D
+#define REG_R14 0x0E
+#define REG_R15 0x0F
+
+#define REG_RIP 0x10
+#define REG_RTP 0x11
+#define REG_RSP 0x12
+#define REG_RLFP 0x13
+#define REG_RPDP 0x14
+#define REG_RCF 0x15
+#define REG_RPL 0x16
+
+#define REG_RFI0 0x18
+#define REG_RFI1 0x19
+#define REG_RFO0 0x1A
+#define REG_RFO1 0x1B
+
+#define REG_RFP 0x1D
+#define REG_RRAP 0x1E
+#define REG_RZ 0x1F
+
 #pragma pack(push, 1)
 typedef struct RegisterFrame {
 	word r0;
@@ -29,14 +64,15 @@ typedef struct RegisterFrame {
 	word rpl;
 
 	word _reserved_0;
-	word _reserved_1;
-	word _reserved_2;
-	word _reserved_3;
-	word _reserved_4;
 
 	word rfi0;
 	word rfi1;
 	word rfo0;
 	word rfo1;
+
+	word _reserved_1;
+	word _reserved_2;
+	word _reserved_3;
+	word _reserved_4;
 } RegisterFrame;
 #pragma pack(pop)

@@ -7,7 +7,7 @@ void mem_init(HardwareMemory* mem, u32 size, bool rw) {
 	mem->size = size;
 	mem->rw = rw;
 
-	memset(mem->ptr, 0, size);
+	//memset(mem->ptr, 0, size);
 }
 
 void mem_free(HardwareMemory* mem) {

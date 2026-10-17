@@ -1,11 +1,14 @@
 #include <string.h>
+#include "log.h"
+#include "reg.h"
 #include "cu.h"
 #include "mmu.h"
+#include "isa/isa.h"
 
 bool irq_map[INT_MAX + 1] = { 0 };
 
-RegisterFrame* rfp = 0;
-InterruptRoutineArray* rrap = 0;
+word rfp = 0;
+word rrap = 0;
 word rz = 0;
 
 void cu_init() {
@@ -27,19 +30,22 @@ void cu_init() {
 	memcpy(g2h_phy_addr(PMM0_SYSTEM_BASE), &rf, sizeof(RegisterFrame));
 
 	// set default global register values
-	rfp = g2h_phy_addr(PMM0_SYSTEM_BASE);
+	rfp = PMM0_SYSTEM_BASE;
 	rrap = 0x0;
 }
 
 void cu_step() {
 fetch: ;
-	word instruction = mmu_mread32(mmu_tavp(rfp->rip, 'x'));
+	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
 
 decode: ;
-	// decode TODO
+	CpuInstruction inst;
+	isa_decode(&inst, inst_data);
+
+	zlog_info(lc_emu, "decoded instr op %d", inst.op);
 
 execute: ;
-	// execute TODO
+	isa_execute(&inst);
 
 interrupts: ;
 	// handle interrupts
@@ -50,12 +56,16 @@ interrupts: ;
 	*/
 	for(u8 i = 0; i < INT_MAX; i++) {
 		if(irq_map[i]) {
-			if(rrap) {
-				InterruptRoutineArrayEntry* irae = &rrap->entries[i];
+			if(cu_read_reg(rrap)) {
+				InterruptRoutineArrayEntry irae;
+				g2h_read32(rrap + (i * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
 				
-				if(irae->en) {
-					rfp = g2h_phy_addr(irae->rfp);
-					rfp->rip = irae->rh;
+				if(irae.en) {
+					cu_write_reg(REG_RFP, irae.rfp);
+					cu_write_reg(REG_RIP, irae.rh);
+
+					zlog_info(lc_cpu, "handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
+
 					goto fetch; // need to handle this interrupt now
 				}
 			}
@@ -65,16 +75,63 @@ interrupts: ;
 	}
 
 advance: ;
-	rfp->rip += sizeof(word);
+	if(inst.advance_next) {
+		cu_write_reg(REG_RIP, cu_read_reg(REG_RIP) + sizeof(word));
+	}
 }
 
 void cu_raise_int(u8 id, word rfi0, word rfi1) {
 	irq_map[id] = true;
+	zlog_info(lc_cpu, "INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
 	
 	if(rrap) {
-		InterruptRoutineArrayEntry* irae = &rrap->entries[id];
+		InterruptRoutineArrayEntry irae;
+		g2h_read32(rrap + (id * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
 
-		mmu_mwrite32(irae->rfp + offsetof(RegisterFrame, rfi0), rfi0);
-		mmu_mwrite32(irae->rfp + offsetof(RegisterFrame, rfi1), rfi1);
+		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi0), rfi0);
+		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi1), rfi1);
 	}
+}
+
+word cu_read_reg(u8 idx) {
+	switch(idx) {
+		case REG_RFP: {
+			return rfp;
+		}
+		case REG_RRAP: {
+			return rrap;
+		}
+		case REG_RZ: {
+			return 0;
+		}
+		default: {
+			assert(rfp);
+			return mmu_mread32(rfp + (idx * sizeof(word)));
+		}
+	}
+}
+
+bool cu_write_reg(u8 idx, word value) {
+	switch(idx) {
+		case REG_RFP: {
+			PL_CHECK_RET(PL_1, false)
+			rfp = value;
+		}
+		case REG_RRAP: {
+			PL_CHECK_RET(PL_1, false)
+			rrap = value;
+		}
+		case REG_RZ: {
+			cu_raise_int(INT_IOP, 0, 0);
+			return false;
+		}
+		case REG_RPDP:
+			PL_CHECK_RET(PL_1, false)
+		default: {
+			assert(rfp);
+			mmu_mwrite32(rfp + (idx * sizeof(word)), value);
+		}
+	}
+
+	return true;
 }

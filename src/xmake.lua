@@ -3,8 +3,10 @@ target("hremu")
 
 	add_files(
 		"main.c",
-		"mem/*.c",
-		"cpu/*.c"
+		"cpu/*.c",
+		"dbg/*.c",
+		"isa/*.c",
+		"mem/*.c"
 	)
 
 	add_includedirs(".")
