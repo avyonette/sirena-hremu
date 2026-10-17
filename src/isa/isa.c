@@ -43,15 +43,15 @@ bool isa_decode(CpuInstruction* inst, word data) {
 			inst->i.op = op;
 			inst->i.os = os;
 			inst->i.ds = (data >> 9) & 0b11111;
-			inst->i.vl = (data >> 13) & 0b1111111111111111;
+			inst->i.vl = (data >> 14) & 0b1111111111111111;
 			inst->i.ff = (data >> 30) & 0b11;
 			break;
 		};
 		case JUMP: {
 			inst->i.op = op;
 			inst->i.os = os;
-			inst->j.tg = (data >> 9) & 0b11111111111111111;
-			inst->j.rc = (data >> 27) & 0b111111;
+			inst->j.tg = (data >> 9) & 0b111111111111111111;
+			inst->j.rc = (data >> 27) & 0b11111;
 			break;
 		}
 		default: {

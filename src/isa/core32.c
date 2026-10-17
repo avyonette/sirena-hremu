@@ -67,7 +67,7 @@ bool lli(CpuInstruction* inst) {
 		}
 		case CORE32_LLI_LUI: {
 			word value = inst->i.vl << 16;
-			word destination = cu_read_reg(inst->i.ds) & 0xFFFF0000;
+			word destination = cu_read_reg(inst->i.ds) & 0x0000FFFF;
 
 			cu_write_reg(inst->i.ds, destination | value);
 			return true;
@@ -179,7 +179,7 @@ bool jr(CpuInstruction* inst) {
 \
 	if(pass) { \
 		word current = cu_read_reg(REG_RIP); \
-		word target = cu_read_reg(inst->j.tg); \
+		word target = inst->j.tg; \
 		cu_write_reg(REG_RIP, current + alu_signe18(target)); \
 \
 		inst->auto_advance = false; \
@@ -240,7 +240,8 @@ bool ret(CpuInstruction* inst) {
 		result |= 1 << 1; \
 		if(a < b) { \
 			result |= 1 << 2; \
-		} else { \
+		} \
+		if(a > 0) { \
 			result |= 1 << 3; \
 		} \
 	}
@@ -282,7 +283,7 @@ bool add(CpuInstruction* inst) {
 			break;
 		}
 		case CORE32_ADD_SUB: {
-			result = alu_iadd32c(a, b);
+			result = alu_isub32(a, b);
 			break;
 		}
 		default: {

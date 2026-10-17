@@ -119,21 +119,17 @@ u32 alu_ashr32(u32 a, u32 n) {
 	return y;
 }
 
-// Source - https://stackoverflow.com/a/31655073
-// Posted by Kevin Thibedeau
-// Retrieved 2026-10-17, License - CC BY-SA 3.0
-#define SIGNEX(v, sb) ((v) | (((v) & (1 << (sb))) ? ~((1 << (sb))-1) : 0))
-
+// https://stackoverflow.com/a/65895611
 u32 alu_signe18(u32 a) {
-	return SIGNEX(a, 17);
+	return (a & 0x3FFFF) | -(a & 0x20000);
 }
 
 u32 alu_signe16(u32 a) {
-	return SIGNEX(a, 15);
+	return (a & 0xFFFF) | -(a & 0x8000);
 }
 
 u32 alu_signe8(u32 a) {
-	return SIGNEX(a, 7);
+	return (a & 0xFF) | -(a & 0x80);
 }
 
 /*

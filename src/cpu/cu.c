@@ -47,6 +47,7 @@ begin: ;
 
 fetch: ;
 	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
+	zlog_info(lc_emu, "inst data %#010x", inst_data);
 
 decode: ;
 	CpuInstruction inst;
@@ -56,9 +57,9 @@ decode: ;
 		goto interrupts; // skip execute
 	}
 
-	zlog_info(lc_emu, "decoded instr op %d", inst.op);
-
 execute: ;
+	zlog_info(lc_emu, "exec op %#04x", inst.op);
+
 	if(!isa_execute(&inst)) {
 		cu_raise_int(INT_UDO, INT_UDO_0(inst.op, inst.os), 0);
 		goto interrupts;
