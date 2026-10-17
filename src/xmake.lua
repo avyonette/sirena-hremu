@@ -2,12 +2,12 @@ target("hremu")
 	set_kind("binary")
 
 	add_files(
-		"main.cpp",
-		"mem/*.cpp",
-		"cpu/*.cpp"
+		"main.c",
+		"mem/*.c",
+		"cpu/*.c"
 	)
 
 	add_includedirs(".")
 
-	add_packages("spdlog")
+	add_packages("zlog")
 target_end()

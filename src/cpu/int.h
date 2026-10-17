@@ -27,17 +27,15 @@
 
 #define INT_GPE_1(cpl, npl) (cpl & 0b11) | ((npl & 0b11) << 2)
 
-namespace hremu::cpu {
 #pragma pack(push, 1)
-	struct InterruptRoutineArrayEntry {
-		bool en : 1;
-		u32 _reserved_0 : 31 = 0;
-		p_addr rfp;
-		p_addr rh;
-	};
+typedef struct InterruptRoutineArrayEntry {
+	bool en : 1;
+	u32 _reserved_0 : 31;
+	p_addr rfp;
+	p_addr rh;
+} InterruptRoutineArrayEntry;
 
-	struct InterruptRoutineArray {
-		InterruptRoutineArrayEntry entries[INT_MAX + 1];
-	};
+typedef struct InterruptRoutineArray {
+	InterruptRoutineArrayEntry entries[INT_MAX + 1];
+} InterruptRoutineArray;
 #pragma pack(pop)
-}

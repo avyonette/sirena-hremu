@@ -1,8 +1,8 @@
 set_project("hremu")
-set_languages("c17", "cxx26")
+set_languages("c17")
 
 add_requires(
-	"spdlog 1.17.0"
+	"zlog 1.2.19"
 )
 
 add_rules("plugin.compile_commands.autoupdate", {outputdir = "$(builddir)"})
