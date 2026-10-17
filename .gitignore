@@ -63,6 +63,9 @@ build/
 
 imgui.ini
 __pycache__/
+*.hexproj
+log.txt
+*.log
 
 # valgrind
 callgrind.out*
