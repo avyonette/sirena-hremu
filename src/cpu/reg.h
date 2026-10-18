@@ -1,7 +1,6 @@
 #pragma once
 #include <arch_types.h>
 
-// TODO write in the cpu spec how these are assigned (they're assigned in order of the frame struct)
 #define REG_R0 0x00
 #define REG_R1 0x01
 #define REG_R2 0x02

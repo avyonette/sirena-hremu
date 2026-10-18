@@ -368,7 +368,7 @@ bool shl(CpuInstruction* inst) {
 bool shli(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_lshl32(a, alu_zeroe16(n));
+	u32 result = alu_lshl32(a, alu_signe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -377,7 +377,7 @@ bool shli(CpuInstruction* inst) {
 bool shri(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_lshr32(a, alu_zeroe16(n));
+	u32 result = alu_lshr32(a, alu_signe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -386,7 +386,7 @@ bool shri(CpuInstruction* inst) {
 bool shsri(CpuInstruction* inst) {
 	u32 a = cu_read_reg(inst->i.ds);
 	u32 n = inst->i.vl;
-	u32 result = alu_ashr32(a, alu_zeroe16(n));
+	u32 result = alu_ashr32(a, alu_signe16(n));
 
 	cu_write_reg(inst->i.ds, result);
 	return true;
@@ -505,7 +505,7 @@ OpSetEntry core32_opset[OPSET_SIZE] = {
 	{ REGISTER, shl },
 	{ IMMEDIATE, shli },
 	{ REGISTER, int_ },
-	{ JUMP, inti },
+	{ IMMEDIATE, inti },
 	{ IMMEDIATE, intm },
 	{ REGISTER, reti },
 	{ REGISTER, mcw },

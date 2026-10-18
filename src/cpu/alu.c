@@ -17,6 +17,7 @@
 		cu_write_reg(REG_RCF, rcf); \
 	}
 
+// TODO overflow check broken (always true)
 u32 alu_iadd32c(u32 a, u32 b) {
 	u32 y = a + b;
 
