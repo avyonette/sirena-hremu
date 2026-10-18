@@ -18,31 +18,31 @@ bool ldw(CpuInstruction* inst) {
 	switch(inst->r.ff) {
 		case CORE32_LDW_LDW: {
 			word source = cu_read_reg(inst->r.ra);
-			word data = mmu_mread32(source);
+			word data = mmu_mread32(mmu_tavp(source, 'r'));
 			cu_write_reg(inst->r.ds, data);
 			return true;
 		}
 		case CORE32_LDW_LDHZ: {
 			word source = cu_read_reg(inst->r.ra);
-			word data = mmu_mread16(source);
+			word data = mmu_mread16(mmu_tavp(source, 'r'));
 			cu_write_reg(inst->r.ds, alu_zeroe16(data));
 			return true;
 		}
 		case CORE32_LDW_LDHS: {
 			word source = cu_read_reg(inst->r.ra);
-			word data = mmu_mread16(source);
+			word data = mmu_mread16(mmu_tavp(source, 'r'));
 			cu_write_reg(inst->r.ds, alu_signe16(data));
 			return true;
 		}
 		case CORE32_LDW_LDBZ: {
 			word source = cu_read_reg(inst->r.ra);
-			word data = mmu_mread8(source);
+			word data = mmu_mread8(mmu_tavp(source, 'r'));
 			cu_write_reg(inst->r.ds, alu_zeroe8(data));
 			return true;
 		}
 		case CORE32_LDW_LDBS: {
 			word source = cu_read_reg(inst->r.ra);
-			word data = mmu_mread8(source);
+			word data = mmu_mread8(mmu_tavp(source, 'r'));
 			cu_write_reg(inst->r.ds, alu_signe8(data));
 			return true;
 		}
@@ -83,21 +83,21 @@ bool stw(CpuInstruction* inst) {
 			word source = cu_read_reg(inst->r.ra);
 			word destination = cu_read_reg(inst->r.ds);
 
-			mmu_mwrite32(destination, source);
+			mmu_mwrite32(mmu_tavp(destination, 'w'), source);
 			return true;
 		}
 		case CORE32_STW_STH: {
 			word source = cu_read_reg(inst->r.ra);
 			word destination = cu_read_reg(inst->r.ds);
 
-			mmu_mwrite16(destination, source & 0xFFFF);
+			mmu_mwrite16(mmu_tavp(destination, 'w'), source & 0xFFFF);
 			return true;
 		}
 		case CORE32_STW_STB: {
 			word source = cu_read_reg(inst->r.ra);
 			word destination = cu_read_reg(inst->r.ds);
 
-			mmu_mwrite8(destination, source & 0xFF);
+			mmu_mwrite8(mmu_tavp(destination, 'w'), source & 0xFF);
 			return true;
 		}
 	}
@@ -455,15 +455,15 @@ bool mcw(CpuInstruction* inst) {
 
 	switch(inst->r.ff) {
 		case CORE32_MCW_MCW: {
-			mmu_mwrite32(destination, mmu_mread32(source));
+			mmu_mwrite32(mmu_tavp(destination, 'w'), mmu_mread32(mmu_tavp(source, 'r')));
 			break;
 		}
 		case CORE32_MCW_MCH: {
-			mmu_mwrite16(destination, mmu_mread16(source));
+			mmu_mwrite16(mmu_tavp(destination, 'w'), mmu_mread16(mmu_tavp(source, 'r')));
 			break;
 		}
 		case CORE32_MCW_MCB: {
-			mmu_mwrite8(destination, mmu_mread8(source));
+			mmu_mwrite8(mmu_tavp(destination, 'w'), mmu_mread8(mmu_tavp(source, 'r')));
 			break;
 		}
 		default:

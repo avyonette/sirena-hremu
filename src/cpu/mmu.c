@@ -3,44 +3,54 @@
 #include "paging.h"
 #include "mem/ram.h"
 #include "mem/rom.h"
-#include "log.h"
-#include <stdlib.h>
 #include <string.h>
 
 #define READ_REGION(address, size) \
+	word cpl = cu_read_reg(REG_RPL);\
 	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
 		return 0; \
 	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
 		return mem_read##size(&user_ram, address - PMM0_USER_BASE); \
 	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
 		return mem_read##size(&blip_rom, address - PMM0_BLIP_BASE); \
 	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
 		return 0; \
 	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
 		assert(false && "not implemented"); /* TODO SPPBC map */ \
 		return 0; \
 	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
 		return mem_read##size(&l1_pmm, address - PMM0_PMM1_BASE); \
 	} else { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
 		return mem_read##size(&system_ram, address - PMM0_SYSTEM_BASE); \
 	}
 
 #define WRITE_REGION(address, size, data) \
+	word cpl = cu_read_reg(REG_RPL);\
 	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
+		return false;\
 	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
 		mem_write##size(&user_ram, address - PMM0_USER_BASE, data); \
 	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRITE_TO_ROM); \
+		return false;\
 	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) { \
 		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
+		return false;\
 	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
 		assert(false && "not implemented"); /* TODO SPPBC map */ \
 	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
 		mem_write##size(&l1_pmm, address - PMM0_PMM1_BASE, data); \
 	} else { \
+		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
 		mem_write##size(&system_ram, address - PMM0_SYSTEM_BASE, data); \
 	}
 
@@ -99,20 +109,20 @@ p_addr mmu_tavp(v_addr address, char purpose) {
 		return 0;
 	}
 
-	word rpl = cu_read_reg(REG_RPL);
+	word cpl = cu_read_reg(REG_RPL);
 
-	if(rpl != pdesc->pl) {
-		cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(rpl, pdesc->pl));
+	if(cpl != pdesc->pl) {
+		cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, pdesc->pl));
 		return 0;
 	}
 
 	if(purpose == 'w' && !pdesc->rw) {
-		cu_raise_int(INT_GPE, INT_GPE_0_WRITE_ON_READ_ONLY, INT_GPE_1(rpl, pdesc->pl));
+		cu_raise_int(INT_GPE, INT_GPE_0_WRITE_ON_READ_ONLY, INT_GPE_1(cpl, pdesc->pl));
 		return 0;
 	}
 
 	if(purpose == 'x' && !pdesc->ex) {
-		cu_raise_int(INT_GPE, INT_GPE_0_EXEC_ON_NO_EXEC, INT_GPE_1(rpl, pdesc->pl));
+		cu_raise_int(INT_GPE, INT_GPE_0_EXEC_ON_NO_EXEC, INT_GPE_1(cpl, pdesc->pl));
 		return 0;
 	}
 
@@ -141,26 +151,29 @@ word mmu_mread32(p_addr address) {
 	READ_REGION(address, 32);
 }
 
-void mmu_mwrite8(p_addr address, byte data) {
+bool mmu_mwrite8(p_addr address, byte data) {
 	WRITE_REGION(address, 8, data);
+	return true;
 }
 
-void mmu_mwrite16(p_addr address, half_word data) {
+bool mmu_mwrite16(p_addr address, half_word data) {
 	if((address & 0b1) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
-		return;
+		return false;
 	}
 
 	WRITE_REGION(address, 16, data);
+	return true;
 }
 
-void mmu_mwrite32(p_addr address, word data) {
+bool mmu_mwrite32(p_addr address, word data) {
 	if((address & 0b11) != 0) {
 		cu_raise_int(INT_MAE, address, INT_MAE_1_WRONG_ALIGNMENT);
-		return;
+		return false;
 	}
 
 	WRITE_REGION(address, 32, data);
+	return true;
 }
 
 void* g2h_phy_addr(p_addr address) {

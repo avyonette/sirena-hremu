@@ -1,6 +1,8 @@
 #include <string.h>
 #include "cpu/int.h"
 #include "log.h"
+#include "mem/mem.h"
+#include "mem/ram.h"
 #include "reg.h"
 #include "cu.h"
 #include "mmu.h"
@@ -36,15 +38,6 @@ void cu_init() {
 }
 
 void cu_step() {
-begin: ;
-	// check if current PL is valid
-	u8 cpl = cu_read_reg(REG_RPL);
-
-	if(cpl != PL_0 && cpl != PL_1) {
-		cu_raise_int(INT_GPE, INT_GPE_0_UNDEFINED_PRIVILEGE, 0);
-		goto interrupts; // if PL is invalid, skip the cycle entirely
-	}
-
 fetch: ;
 	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
 	zlog_info(lc_emu, "inst data %#010x", inst_data);
@@ -84,7 +77,7 @@ interrupts: ;
 
 					zlog_info(lc_cpu, "handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
 
-					goto begin; // need to handle this interrupt now
+					goto fetch; // need to handle this interrupt now
 				}
 			}
 			
@@ -134,7 +127,7 @@ word cu_read_reg(u8 idx) {
 		}
 		default: {
 			assert(rfp);
-			return mmu_mread32(rfp + (idx * sizeof(word)));
+			return mem_read32(&system_ram, (rfp - PMM0_SYSTEM_BASE) + (idx * sizeof(word)));
 		}
 	}
 }
@@ -143,7 +136,13 @@ void cu_write_reg(u8 idx, word value) {
 	switch(idx) {
 		case REG_RFP: {
 			PL_CHECK(PL_1)
-			rfp = value;
+
+			// check if new fp is inside system RAM
+			if(value >= PMM0_SYSTEM_BASE && value < PMM0_SYSTEM_LIMIT) {
+				rfp = value;
+			} else {
+				cu_raise_int(INT_IOP, INT_IOP_0_FP_OUTSIDE_SYSTEM, 0);
+			}
 			break;
 		}
 		case REG_RRAP: {
@@ -151,15 +150,21 @@ void cu_write_reg(u8 idx, word value) {
 			rrap = value;
 			break;
 		}
+		case REG_RLFP:
 		case REG_RZ: {
-			cu_raise_int(INT_IOP, 0, 0);
+			cu_raise_int(INT_IOP, INT_IOP_0_WRITE_TO_RO_REG, 0);
 			break;
 		}
+		case REG_RPL:
+			if(value != PL_0 && value != PL_1) {
+				cu_raise_int(INT_GPE, INT_GPE_0_UNDEFINED_PRIVILEGE, 0);
+				break; // requested PL is invalid
+			}
 		case REG_RPDP:
 			PL_CHECK(PL_1)
 		default: {
 			assert(rfp);
-			mmu_mwrite32(rfp + (idx * sizeof(word)), value);
+			mem_write32(&system_ram, (rfp - PMM0_SYSTEM_BASE) + (idx * sizeof(word)), value);
 			break;
 		}
 	}

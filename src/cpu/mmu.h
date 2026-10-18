@@ -32,9 +32,9 @@ byte mmu_mread8(p_addr address);
 half_word mmu_mread16(p_addr address);
 word mmu_mread32(p_addr address);
 
-void mmu_mwrite8(p_addr address, byte data);
-void mmu_mwrite16(p_addr address, half_word data);
-void mmu_mwrite32(p_addr address, word data);
+bool mmu_mwrite8(p_addr address, byte data);
+bool mmu_mwrite16(p_addr address, half_word data);
+bool mmu_mwrite32(p_addr address, word data);
 
 /*
 	converts a guest emulator's physical address to a "real" host address
