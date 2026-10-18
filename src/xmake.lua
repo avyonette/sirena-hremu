@@ -11,5 +11,8 @@ target("hremu")
 
 	add_includedirs(".")
 
-	add_packages("zlog", "argtable3")
+	add_packages(
+		"argtable3",
+		"stumpless"
+	)
 target_end()

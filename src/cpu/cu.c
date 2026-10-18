@@ -40,7 +40,7 @@ void cu_init() {
 void cu_step() {
 fetch: ;
 	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
-	//zlog_info(lc_emu, "inst data %#010x", inst_data);
+	//EMU_INFO("inst data %#010x", inst_data);
 
 decode: ;
 	CpuInstruction inst;
@@ -51,7 +51,7 @@ decode: ;
 	}
 
 execute: ;
-	//zlog_info(lc_emu, "exec op %#04x", inst.op);
+	//EMU_INFO("exec op %#04x", inst.op);
 
 	if(!isa_execute(&inst)) {
 		cu_raise_int(INT_UDO, INT_UDO_0(inst.op, inst.os), 0);
@@ -75,7 +75,7 @@ interrupts: ;
 					cu_write_reg(REG_RFP, irae.rfp);
 					cu_write_reg(REG_RIP, irae.rh);
 
-					zlog_info(lc_cpu, "handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
+					CPU_INFO("handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
 
 					goto fetch; // need to handle this interrupt now
 				}
@@ -94,7 +94,7 @@ advance: ;
 
 void cu_raise_int(u8 id, word rfi0, word rfi1) {
 	irq_map[id] = true;
-	zlog_info(lc_cpu, "INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
+	CPU_INFO("INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
 	
 	if(rrap) {
 		InterruptRoutineArrayEntry irae;

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlog.h>
 #include <assert.h>
 #include <argtable3.h>
 #include "dbg/dbg.h"
@@ -13,8 +12,8 @@
 #include "cpu/cu.h"
 #include "opts.h"
 
-zlog_category_t* lc_emu;
-zlog_category_t* lc_cpu;
+struct stumpless_target* log_emu_target;
+struct stumpless_target* log_cpu_target;
 
 HardwareMemory user_ram;
 HardwareMemory system_ram;
@@ -40,13 +39,8 @@ int main(int argc, char* argv[]) {
 		cli_end = arg_end(1)
 	};
 
-	zlog_init("log.conf");
-	
-	lc_emu = zlog_get_category("emu");
-	assert(lc_emu);
-
-	lc_cpu = zlog_get_category("cpu");
-	assert(lc_cpu);
+	log_emu_target = stumpless_open_stdout_target("emu");
+	log_cpu_target = stumpless_open_stdout_target("cpu");
 
 	if(arg_parse(argc, argv, argt) > 0) {
 		printf("Usage:\n");
@@ -57,19 +51,19 @@ int main(int argc, char* argv[]) {
 		auto_disassemble = cli_auto_disasm->count > 0;
 	}
 
-	zlog_info(lc_emu, "BLIP ROM file name: %s", cli_blip->filename[0]);
+	EMU_INFO("BLIP ROM file name: %s", cli_blip->filename[0]);
 
-	zlog_info(lc_emu, "initialising memory");
+	EMU_INFO("initialising memory");
 	mem_init(&user_ram, USER_RAM_SIZE, true);
 	mem_init(&system_ram, SYSTEM_RAM_SIZE, true);
 	mem_init(&blip_rom, BLIP_ROM_SIZE, false);
 
-	zlog_info(lc_emu, "user RAM size: %#010x", user_ram.size);
-	zlog_info(lc_emu, "system RAM size: %#010x", system_ram.size);
-	zlog_info(lc_emu, "BLIP ROM size: %#010x", blip_rom.size);
+	EMU_INFO("user RAM size: %#010x", user_ram.size);
+	EMU_INFO("system RAM size: %#010x", system_ram.size);
+	EMU_INFO("BLIP ROM size: %#010x", blip_rom.size);
 
 	{
-		zlog_info(lc_emu, "reading BLIP ROM data from file");
+		EMU_INFO("reading BLIP ROM data from file");
 
 		FILE* rom = fopen(cli_blip->filename[0], "r");
 		assert(rom);
@@ -82,11 +76,11 @@ int main(int argc, char* argv[]) {
 		fread(rom_data, 1, rom_size, rom);
 		fclose(rom);
 
-		zlog_info(lc_emu, "writing BLIP ROM data to memory");
+		EMU_INFO("writing BLIP ROM data to memory");
 		memcpy(blip_rom.ptr, rom_data, rom_size);
 	}
 
-	zlog_info(lc_emu, "cpu init");
+	EMU_INFO("cpu init");
 	cu_init();
 
 #ifdef ITERATIONS
@@ -103,7 +97,7 @@ int main(int argc, char* argv[]) {
 			dbg_disasm_init(&inst);
 			dbg_disasm_inst(&inst, inst_data);
 
-			zlog_info(lc_emu, "-- %08X: %08X %s %s%s %s%s %s",
+			EMU_INFO("-- %08X: %08X %s %s%s %s%s %s",
 				cu_read_reg(REG_RIP), inst_data,
 				inst.name,
 				inst.param0,
@@ -125,11 +119,12 @@ int main(int argc, char* argv[]) {
 		cycle_count++;
 	}
 
-	zlog_info(lc_emu, "\nGOODBYE :)");
-	zlog_info(lc_emu, "Total cycles: %lu\n", cycle_count);
+	EMU_INFO("\nGOODBYE :)");
+	EMU_INFO("Total cycles: %lu\n", cycle_count);
 	dbg_cpu_dump_regs(stdout);
 
 exit: ;
 	arg_freetable(argt, sizeof(argt) / sizeof(argt[0]));
+	stumpless_free_all();
 	return 0;
 }
