@@ -63,7 +63,7 @@ bool isa_decode(CpuInstruction* inst, word data) {
 }
 
 bool isa_execute(CpuInstruction* inst) {
-	inst->auto_advance = true; // default advance
+	inst->auto_advance = true; // default advance (7. "the CPU must advance the (rip) by a single word for any instruction that does not explicitly set the (rip)")
 
 	switch(inst->os) {
 		case CORE32_OPSET: {

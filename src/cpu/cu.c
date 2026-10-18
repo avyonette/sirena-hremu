@@ -40,7 +40,7 @@ void cu_init() {
 void cu_step() {
 fetch: ;
 	word inst_data = mmu_mread32(mmu_tavp(cu_read_reg(REG_RIP), 'x'));
-	zlog_info(lc_emu, "inst data %#010x", inst_data);
+	//zlog_info(lc_emu, "inst data %#010x", inst_data);
 
 decode: ;
 	CpuInstruction inst;
@@ -51,7 +51,7 @@ decode: ;
 	}
 
 execute: ;
-	zlog_info(lc_emu, "exec op %#04x", inst.op);
+	//zlog_info(lc_emu, "exec op %#04x", inst.op);
 
 	if(!isa_execute(&inst)) {
 		cu_raise_int(INT_UDO, INT_UDO_0(inst.op, inst.os), 0);
@@ -86,6 +86,7 @@ interrupts: ;
 	}
 
 advance: ;
+	// 7. "the CPU must advance the (rip) by a single word for any instruction that does not explicitly set the (rip)"
 	if(inst.auto_advance) {
 		cu_write_reg(REG_RIP, cu_read_reg(REG_RIP) + sizeof(word));
 	}

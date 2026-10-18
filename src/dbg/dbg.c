@@ -1,5 +1,8 @@
 #include "dbg.h"
 #include "cpu/cu.h"
+#include "cpu/mmu.h"
+#include "cpu/reg.h"
+#include <assert.h>
 
 #define FMT "%08X"
 
@@ -29,4 +32,16 @@ void dbg_cpu_dump_regs(FILE* out) {
 	fprintf(out, "| rfp : "FMT" | rrap: "FMT" | rz  : "FMT" |                |\n", cu_read_reg(REG_RFP), cu_read_reg(REG_RRAP), cu_read_reg(REG_RZ));
 
 	fprintf(out, "\\----------------+----------------+----------------+----------------/\n");
+}
+
+void dbg_cpu_get_rip_data32(word* data) {
+	assert(data);
+
+	word rip = cu_read_reg(REG_RIP);
+	assert(rip > 0);
+
+	word* data_ptr = g2h_phy_addr(mmu_tavp(rip, 'r'));
+	assert(data_ptr);
+	
+	*data = *data_ptr;
 }
