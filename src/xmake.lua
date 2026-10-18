@@ -2,9 +2,10 @@ target("hremu")
 	set_kind("binary")
 
 	add_files(
-		"main.c",
+		"*.c",
 		"cpu/*.c",
 		"dbg/*.c",
+		"gui/*.c",
 		"isa/*.c",
 		"mem/*.c"
 	)
