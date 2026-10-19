@@ -26,10 +26,14 @@
 #define REG_RCF 0x15
 #define REG_RPL 0x16
 
+#define REG_RSRV0 0x17
+
 #define REG_RFI0 0x18
 #define REG_RFI1 0x19
 #define REG_RFO0 0x1A
 #define REG_RFO1 0x1B
+
+#define REG_RSRV1 0x1C
 
 #define REG_RFP 0x1D
 #define REG_RRAP 0x1E

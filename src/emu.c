@@ -16,6 +16,7 @@ HardwareMemory system_ram;
 HardwareMemory blip_rom;
 
 u64 emu_iter_count = 0;
+bool emu_run = false;
 
 void emu_init() {
 	EMU_INFO("BLIP ROM file name: %s", cli_blip->filename[0]);
@@ -52,6 +53,8 @@ void emu_init() {
 }
 
 void emu_iter() {
+	if(!emu_run) return;
+
 	if(opt_auto_disassemble) {
 		word inst_data = 0;
 		dbg_cpu_get_rip_data32(&inst_data);

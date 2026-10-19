@@ -7,8 +7,10 @@
 #include "log.h"
 #include "opts.h"
 
-struct stumpless_target* log_emu_target;
-struct stumpless_target* log_cpu_target;
+// struct stumpless_target* log_emu_target;
+// struct stumpless_target* log_cpu_target;
+
+char emu_log_buffer[EMU_LOG_BUFFER_SIZE] = {0};
 
 bool opt_dump_regs_after_cycle = false;
 bool opt_auto_disassemble = false;
@@ -31,8 +33,8 @@ int main(int argc, char* argv[]) {
 		cli_end = arg_end(4)
 	};
 
-	log_emu_target = stumpless_open_stdout_target("emu");
-	log_cpu_target = stumpless_open_stdout_target("cpu");
+	// log_emu_target = stumpless_open_stdout_target("emu");
+	// log_cpu_target = stumpless_open_stdout_target("cpu");
 
 	if(arg_parse(argc, argv, argt) > 0) {
 		printf("Usage:\n");
@@ -53,10 +55,13 @@ int main(int argc, char* argv[]) {
 		if(!gui_init()) {
 			EMU_ERR("GUI initialisation failed");
 			opt_headless = true;
+			emu_run = true;
+		} else {
+			gui_run(emu_iter);
 		}
+	}
 
-		gui_run(emu_iter);
-	} else {
+	if(opt_headless) {
 	#ifdef ITERATIONS
 		for(int i = 0; i < ITERATIONS; i++) {
 	#else

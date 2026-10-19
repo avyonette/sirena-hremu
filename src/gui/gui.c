@@ -1,13 +1,15 @@
 #include "gui.h"
+#include "gui/event_log.h"
+#include "gui/prog_view.h"
+#include "gui/registers.h"
+#include "vm_ctrl.h"
 #include "log.h"
 #include <agar/core.h>
 #include <agar/gui.h>
 #include <agar/gui/window.h>
 
-AG_Window* main_window = NULL;
-
-u32 r_cur = 0;
-u32 r_nom = 0;
+u32 gui_display_width = 0;
+u32 gui_display_height = 0;
 
 bool gui_init() {
 	if(AG_InitCore("hremu", AG_CREATE_DATADIR) == -1) {
@@ -20,13 +22,13 @@ bool gui_init() {
 		return false;
 	}
 
-	if((main_window = AG_WindowNew(AG_WINDOW_MAIN)) == NULL) {
-		EMU_ERR("%s", AG_GetError());
-		return false;
-	}
+	AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
 
-	AG_WindowSetCloseAction(main_window, AG_WINDOW_IGNORE);
-	AG_WindowShow(main_window);
+	if(!gui_event_log_init()) return false;
+	if(!gui_prog_view_init()) return false;
+	if(!gui_registers_init()) return false;
+	if(!gui_vm_ctrl_init()) return false;
+
 	return true;
 }
 
@@ -54,6 +56,13 @@ void gui_run(void (*iter)()) {
 				}
 			}
 		}
+
+		AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
+
+		gui_event_log_process();
+		gui_prog_view_process();
+		gui_registers_process();
+		gui_vm_ctrl_process();
 
 		AG_WindowDrawQueued();
 		AG_Delay(1); 
