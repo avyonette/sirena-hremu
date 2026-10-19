@@ -2,7 +2,7 @@
 ; results:
 ; r1 = CD35400C
 ; r2 = CCD64B98
-; r3 = 9A0B8BA4
+; r10 = 9A0B8BA4
 
 #include "sdk/sierna.asm"
 
@@ -24,7 +24,7 @@ start:
 	lli r0, 0x0000
 	; add data0 to r0
 	addi r0, data0 ; r0 = BLIP_ROM_BASE + data0
-	
+
 	; load first 16 bytes of data0 to r10
 	ldhz r10, r0
 	; load last 16 bytes of data0 to r11

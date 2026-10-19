@@ -72,8 +72,9 @@ interrupts: ;
 				g2h_read32(rrap + (i * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
 				
 				if(irae.en) {
-					cu_write_reg(REG_RFP, irae.rfp);
-					cu_write_reg(REG_RIP, irae.rh);
+					_cu_write_reg_direct(REG_RPL, 1);
+					_cu_write_reg_direct(REG_RFP, irae.rfp);
+					_cu_write_reg_direct(REG_RIP, irae.rh);
 
 					CPU_INFO("handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
 
@@ -163,6 +164,24 @@ void cu_write_reg(u8 idx, word value) {
 			}
 		case REG_RPDP:
 			PL_CHECK(PL_1)
+		default: {
+			assert(rfp);
+			mem_write32(&system_ram, (rfp - PMM0_SYSTEM_BASE) + (idx * sizeof(word)), value);
+			break;
+		}
+	}
+}
+
+void _cu_write_reg_direct(u8 idx, word value) {
+	switch(idx) {
+		case REG_RFP: {
+			rfp = value;
+			break;
+		}
+		case REG_RRAP: {
+			rrap = value;
+			break;
+		}
 		default: {
 			assert(rfp);
 			mem_write32(&system_ram, (rfp - PMM0_SYSTEM_BASE) + (idx * sizeof(word)), value);

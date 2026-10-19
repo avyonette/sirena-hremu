@@ -29,7 +29,7 @@ struct arg_lit* cli_auto_dump_regs;
 struct arg_lit* cli_auto_disasm;
 struct arg_end* cli_end;
 
-//#define ITERATIONS 50
+#define ITERATIONS 80
 
 int main(int argc, char* argv[]) {
 	void* argt[] = {
