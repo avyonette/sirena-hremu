@@ -17,7 +17,7 @@ bool gui_init() {
 		return false;
 	}
 
-	if(AG_InitGraphics(NULL) == -1) {
+	if(AG_InitGraphics("sdl2mw") == -1) {
 		EMU_ERR("%s", AG_GetError());
 		return false;
 	}
@@ -65,7 +65,7 @@ void gui_run(void (*iter)()) {
 		gui_vm_ctrl_process();
 
 		AG_WindowDrawQueued();
-		AG_Delay(1); 
+		AG_Delay(1);
 	}
 
 	gui_free();

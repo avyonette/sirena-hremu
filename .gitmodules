@@ -1,3 +1,6 @@
 [submodule "lib/stumpless"]
 	path = lib/stumpless
 	url = https://github.com/goatshriek/stumpless
+[submodule "lib/libagar"]
+	path = lib/libagar
+	url = https://github.com/JulNadeauCA/libagar

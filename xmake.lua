@@ -7,8 +7,9 @@ add_requires(
 	"zlog 1.2.18",
 	"argtable3 3.2.2",
 	--"zlog 1.2.18",
-	"stumpless",
-	"agar 1.7.1"
+	"stumpless-git",
+	--"agar 1.7.1",
+	"libagar-git"
 )
 
 add_rules("plugin.compile_commands.autoupdate", {outputdir = "$(builddir)"})

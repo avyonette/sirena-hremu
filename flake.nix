@@ -29,6 +29,9 @@
 						git
 						jq
 						moreutils
+						meson
+						perl5
+						#python314
 						
 						llvmPackages_22.clang-tools
 						llvmPackages_22.clang
@@ -40,10 +43,15 @@
 						libcxx
 
 						zlog
+						libGL
 						SDL
+						SDL2
 						freetype
 						libjpeg
-						libagar
+						libffi
+						libllvm
+						#python314
+						#libagar
 					];
 
 					LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;

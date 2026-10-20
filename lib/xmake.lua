@@ -1,4 +1,15 @@
-package("stumpless")
+package("libagar-git")
+	add_deps("meson")
+	set_sourcedir(path.join(os.scriptdir(), "libagar"))
+	on_install(function(package)
+		local configs = {"-Dvg=false", "-Dsg=false", "-Dsk=false", "-Dau=false", "-Dmap=false", "-Dsdl2=true", "-Dgl=true"}
+		table.insert(configs, "-Ddebug=" .. (package:debug() and "true" or "false"))
+		table.insert(configs, "-Ddefault_library=" .. (package:config("shared") and "shared" or "static"))
+		import("package.tools.cmake").install(package, configs)
+	end)
+package_end()
+
+package("stumpless-git")
 	add_deps("cmake")
 	set_sourcedir(path.join(os.scriptdir(), "stumpless"))
 	on_install(function(package)

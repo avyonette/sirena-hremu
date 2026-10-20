@@ -15,6 +15,6 @@ target("hremu")
 	add_packages(
 		"argtable3",
 		"stumpless",
-		"agar"
+		"libagar"
 	)
 target_end()
