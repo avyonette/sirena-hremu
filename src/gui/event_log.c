@@ -3,34 +3,29 @@
 #include "log.h"
 #include <agar/core.h>
 #include <agar/gui.h>
+#include <stdarg.h>
 #include <stdio.h>
 
 AG_Window* el_window = NULL;
 AG_Console* el_console = NULL;
 
-long _gui_event_log_stdout_write(void* c, const char* s, size_t n) {
-	// remove newline from s
-	char* ns = s;
-	if(ns[n - 1] == '\n') {
-		ns[n - 1] = '\0';
+int _gui_event_log_fn(FILE* _, const char* fmt, ...) {
+	// make string
+	static char buf[1024];
+
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	usize n = strlen(buf);
+
+	// remove newline
+	if(buf[n - 1] == '\n') {
+		buf[n - 1] = '\0';
 	}
 
-	AG_ConsoleMsgS(el_console, ns);
-	return 0;
-}
-
-long _gui_event_log_stderr_write(void* c, const char* s, size_t n) {
-	// remove newline from s
-	char* ns = s;
-	if(ns[n - 1] == '\n') {
-		ns[n - 1] = '\0';
-	}
-
-	AG_ConsoleLine* line = AG_ConsoleMsgS(el_console, ns);
-
-	AG_Color red = {255, 0, 0, 255};
-	AG_ConsoleMsgColor(line, &red);
-
+	AG_ConsoleMsgS(el_console, buf);
 	return 0;
 }
 
@@ -51,10 +46,9 @@ bool gui_event_log_init() {
 	AG_WindowSetCloseAction(el_window, AG_WINDOW_IGNORE);
 	AG_WindowShow(el_window);
 
-	// redirect stdout/err writes to our function
-	stdout = fopencookie(NULL, "w", (cookie_io_functions_t) { NULL, _gui_event_log_stdout_write, NULL, NULL });
-	stderr = fopencookie(NULL, "w", (cookie_io_functions_t) { NULL, _gui_event_log_stderr_write, NULL, NULL });
-
+	// redirect log writes to our function
+	emu_log_function = _gui_event_log_fn;
+	
 	return true;
 }
 

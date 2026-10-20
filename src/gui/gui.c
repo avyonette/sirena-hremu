@@ -17,7 +17,7 @@ bool gui_init() {
 		return false;
 	}
 
-	if(AG_InitGraphics("sdl2mw") == -1) {
+	if(AG_InitGraphics("sdl2gl") == -1) {
 		EMU_ERR("%s", AG_GetError());
 		return false;
 	}

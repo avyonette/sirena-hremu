@@ -11,6 +11,7 @@
 // struct stumpless_target* log_cpu_target;
 
 char emu_log_buffer[EMU_LOG_BUFFER_SIZE] = {0};
+EmuLogFunction emu_log_function = fprintf;
 
 bool opt_dump_regs_after_cycle = false;
 bool opt_auto_disassemble = false;
@@ -77,6 +78,5 @@ int main(int argc, char* argv[]) {
 
 exit: ;
 	arg_freetable(argt, sizeof(argt) / sizeof(argt[0]));
-	stumpless_free_all();
 	return 0;
 }

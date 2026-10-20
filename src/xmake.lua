@@ -14,7 +14,15 @@ target("hremu")
 
 	add_packages(
 		"argtable3",
-		"stumpless",
-		"libagar"
+		--"stumpless-git",
+		"libagar-git"
 	)
+
+	-- add libagar rpath to executable
+	on_load(function(target)
+		local pkg = target:pkg("libagar-git")
+		if pkg then
+			target:add("rpathdirs", pkg:installdir("lib") .. "/lib")
+		end
+	end)
 target_end()

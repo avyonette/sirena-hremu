@@ -1,14 +1,16 @@
 #pragma once
-#include <stumpless.h>
 #include <stdio.h>
 
 #define EMU_LOG_BUFFER_SIZE 1024
 extern char emu_log_buffer[EMU_LOG_BUFFER_SIZE];
 
+typedef int (*EmuLogFunction)(FILE*, const char* fmt, ...);
+extern EmuLogFunction emu_log_function;
+
 #define EMU_LOG(f_out, level, ...) \
 	{\
 		sprintf(emu_log_buffer, __VA_ARGS__);\
-		fprintf(f_out, "%s %s\n", level, emu_log_buffer);\
+		emu_log_function(f_out, "%s %s\n", level, emu_log_buffer);\
 		fflush(f_out);\
 	}
 
