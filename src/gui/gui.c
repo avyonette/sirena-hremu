@@ -94,6 +94,7 @@ void gui_run(void (*iter)()) {
 
 void gui_free() {
 	gui_event_log_free();
+	gui_mem_view_free();
 	gui_prog_view_free();
 	gui_registers_free();
 	gui_vm_ctrl_free();
