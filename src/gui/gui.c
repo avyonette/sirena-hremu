@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "gui.h"
 #include "gui/event_log.h"
+#include "gui/mem_view.h"
 #include "gui/prog_view.h"
 #include "gui/registers.h"
 #include "vm_ctrl.h"
@@ -43,6 +44,7 @@ bool gui_init() {
 	AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
 
 	if(!gui_event_log_init()) return false;
+	if(!gui_mem_view_init()) return false;
 	if(!gui_prog_view_init()) return false;
 	if(!gui_registers_init()) return false;
 	if(!gui_vm_ctrl_init()) return false;
@@ -78,6 +80,7 @@ void gui_run(void (*iter)()) {
 		AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
 
 		gui_event_log_process();
+		gui_mem_view_process();
 		gui_prog_view_process();
 		gui_registers_process();
 		gui_vm_ctrl_process();
