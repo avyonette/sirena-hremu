@@ -17,11 +17,10 @@
 u32 gui_display_width = 0;
 u32 gui_display_height = 0;
 
-FILE* f = NULL;
 dictionary* config_dict = NULL;
 
 bool gui_init() {
-	f = fopen(CONFIG_FILE_NAME, "r");
+	FILE* f = fopen(CONFIG_FILE_NAME, "r");
 
 	if(f == NULL) {
 		EMU_WARN("couldn't load " CONFIG_FILE_NAME);
