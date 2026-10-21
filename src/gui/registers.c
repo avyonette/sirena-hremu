@@ -47,9 +47,9 @@ bool gui_registers_init() {
 		return false;
 	}
 
-	AG_WindowSetGeometry(rg_window, 0, 520, 300 + 20, 460);
+	gui_load_window_config("rg", rg_window, 0, 520, 300 + 20, 460);
 
-	rg_reg_table = AG_TableNewPolled(rg_window, AG_TABLE_EXPAND | AG_TABLE_NOAUTOSORT, _gui_registers_reg_table_populate, NULL);
+	rg_reg_table = AG_TableNew(rg_window, AG_TABLE_EXPAND | AG_TABLE_NOAUTOSORT);
 	AG_TableAddCol(rg_reg_table, "name", "50px", NULL);
 	AG_TableAddCol(rg_reg_table, "value", "100px", NULL);
 	AG_TableAddCol(rg_reg_table, "name", "50px", NULL);
@@ -57,12 +57,14 @@ bool gui_registers_init() {
 	AG_TableSetSeparator(rg_reg_table, ",");
 	AG_TableSetPollInterval(rg_reg_table, 100);
 
-	AG_WindowSetCaption(rg_window, "CPU registers");
-	AG_WindowSetCloseAction(rg_window, AG_WINDOW_IGNORE);
-	AG_WindowShow(rg_window);
+	gui_set_window_defaults(rg_window, "CPU registers");
 	return true;
 }
 
 void gui_registers_process() {
 	_gui_registers_reg_table_populate(NULL);
+}
+
+void gui_registers_free() {
+	gui_save_window_config("rg", rg_window);
 }

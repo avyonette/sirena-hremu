@@ -5,11 +5,8 @@ includes("lib")
 
 add_requires(
 	"zlog 1.2.18",
-	"argtable3 3.2.2"
-	--"zlog 1.2.18",
-	--"stumpless-git",
-	--"agar 1.7.1"
-	--"libagar-git"
+	"argtable3 3.2.2",
+	"iniparser 4.2.6"
 )
 
 add_requires("libagar-git", {configs = {shared = true}})

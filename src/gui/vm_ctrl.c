@@ -49,6 +49,7 @@ bool gui_vm_ctrl_init() {
 	}
 
 	AG_WindowSetMinSize(vc_window, 180, 120);
+	gui_load_window_config("vc", vc_window, -1, -1, -1, -1);
 
 	vc_box = AG_BoxNewVert(vc_window, AG_BOX_EXPAND);
 	vc_lbl_state = AG_LabelNew(vc_box, 0, STATE_LABEL_FMT, "Paused", 0, 0ul);
@@ -57,9 +58,7 @@ bool gui_vm_ctrl_init() {
 	vc_btn_toggle = AG_ButtonNewFn(vc_box_btn, 0, "Resume", _gui_vm_ctrl_btn_toggle, NULL);
 	vc_btn_step = AG_ButtonNewFn(vc_box_btn, 0, "Step", _gui_vm_ctrl_btn_step, NULL);
 
-	AG_WindowSetCaption(vc_window, "VM control");
-	AG_WindowSetCloseAction(vc_window, AG_WINDOW_IGNORE);
-	AG_WindowShow(vc_window);
+	gui_set_window_defaults(vc_window, "VM control");
 	return true;
 }
 
@@ -69,4 +68,8 @@ void gui_vm_ctrl_process() {
 		cu_read_reg(REG_RIP),
 		emu_iter_count
 	);
+}
+
+void gui_vm_ctrl_free() {
+	gui_save_window_config("vc", vc_window);
 }

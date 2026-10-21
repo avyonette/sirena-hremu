@@ -14,8 +14,8 @@ target("hremu")
 
 	add_packages(
 		"argtable3",
-		--"stumpless-git",
-		"libagar-git"
+		"libagar-git",
+		"iniparser"
 	)
 
 	-- add libagar rpath to executable

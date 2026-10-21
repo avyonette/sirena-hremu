@@ -34,17 +34,15 @@ bool gui_event_log_init() {
 		EMU_ERR("%s", AG_GetError());
 		return false;
 	}
-
-	AG_WindowSetGeometry(el_window, gui_display_width - 500, gui_display_height - 320, 500, 320);
+	
+	gui_load_window_config("el", el_window, gui_display_width - 500, gui_display_height - 320, 500, 320);
 
 	if((el_console = AG_ConsoleNew(el_window, AG_CONSOLE_EXPAND)) == NULL) {
 		EMU_ERR("%s", AG_GetError());
 		return false;
 	}
 
-	AG_WindowSetCaption(el_window, "Event log");
-	AG_WindowSetCloseAction(el_window, AG_WINDOW_IGNORE);
-	AG_WindowShow(el_window);
+	gui_set_window_defaults(el_window, "Event log");
 
 	// redirect log writes to our function
 	emu_log_function = _gui_event_log_fn;
@@ -53,3 +51,7 @@ bool gui_event_log_init() {
 }
 
 void gui_event_log_process() {}
+
+void gui_event_log_free() {
+	gui_save_window_config("el", el_window);
+}

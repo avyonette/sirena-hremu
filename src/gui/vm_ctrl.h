@@ -3,3 +3,4 @@
 
 bool gui_vm_ctrl_init();
 void gui_vm_ctrl_process();
+void gui_vm_ctrl_free();

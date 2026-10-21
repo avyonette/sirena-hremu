@@ -67,6 +67,7 @@ __pycache__/
 *.hexproj
 log.txt
 *.log
+*.ini
 
 # valgrind
 callgrind.out*

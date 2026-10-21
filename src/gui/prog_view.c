@@ -6,6 +6,7 @@
 #include "dbg/dbg.h"
 #include "dbg/disasm.h"
 #include "emu.h"
+#include "gui/gui.h"
 #include "isa/op.h"
 #include "log.h"
 
@@ -18,7 +19,7 @@ bool gui_prog_view_init() {
 		return false;
 	}
 
-	AG_WindowSetGeometry(av_window, 0, 0, 360 + 20, 520);
+	gui_load_window_config("av", av_window, 0, 0, 360 + 20, 520);
 
 	av_prog_table = AG_TableNew(av_window, AG_TABLE_EXPAND | AG_TABLE_NOAUTOSORT);
 	AG_TableAddCol(av_prog_table, "address", "100px", NULL);
@@ -26,9 +27,7 @@ bool gui_prog_view_init() {
 	AG_TableAddCol(av_prog_table, "program", "160px", NULL);
 	AG_TableSetSeparator(av_prog_table, ",");
 
-	AG_WindowSetCaption(av_window, "Program view");
-	AG_WindowSetCloseAction(av_window, AG_WINDOW_IGNORE);
-	AG_WindowShow(av_window);
+	gui_set_window_defaults(av_window, "Program view");
 	return true;
 }
 
@@ -68,4 +67,8 @@ void gui_prog_view_process() {
 		}
 	}
 	AG_TableEnd(av_prog_table);
+}
+
+void gui_prog_view_free() {
+	gui_save_window_config("av", av_window);
 }
