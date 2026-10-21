@@ -1,4 +1,16 @@
-package("stumpless")
+package("libagar-git")
+	add_deps("cmake", "pkg-config", "freetype", "libpng", "libsdl2", "opengl", "fontconfig", "libx11", "libxinerama", "glu")
+	set_sourcedir(path.join(os.scriptdir(), "libagar"))
+	--add_configs("shared", {description = "Build shared libs", default = false, type = "boolean"})
+	on_install(function(package)
+		local configs = {"-DAGAR_STATIC=ON", "-DAGAR_SHARED=ON", "-DAGAR_VG=OFF", "-DAGAR_SG=OFF", "-DAGAR_SK=OFF", "-DAGAR_AU=OFF", "-DAGAR_MAP=OFF", "-DAGAR_GUI_JPEG=OFF", "-DAGAR_GUI_SDL=OFF", "-DAGAR_GUI_X11=OFF", "-DAGAR_GUI_PLUTOSVG=OFF"}
+		table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (package:debug() and "Debug" or "Release"))
+		--table.insert(configs, "-DBUILD_SHARED_LIBS=" .. (package:config("shared") and "ON" or "OFF"))
+		import("package.tools.cmake").install(package, configs)
+	end)
+package_end()
+
+package("stumpless-git")
 	add_deps("cmake")
 	set_sourcedir(path.join(os.scriptdir(), "stumpless"))
 	on_install(function(package)

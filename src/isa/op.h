@@ -1,6 +1,8 @@
 #pragma once
 #include "types.h"
 
+#define INSTRUCTION_SIZE 4
+
 #pragma pack(push, 1)
 typedef struct RInstruction {
 	u8 os : 4;

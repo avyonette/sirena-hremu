@@ -1,32 +1,26 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 #include <argtable3.h>
 #include "dbg/dbg.h"
-#include "dbg/disasm.h"
+#include "emu.h"
+#include "gui/gui.h"
 #include "log.h"
-#include "mem/mem.h"
-#include "mem/ram.h"
-#include "mem/rom.h"
-#include "cpu/cu.h"
 #include "opts.h"
 
-struct stumpless_target* log_emu_target;
-struct stumpless_target* log_cpu_target;
+// struct stumpless_target* log_emu_target;
+// struct stumpless_target* log_cpu_target;
 
-HardwareMemory user_ram;
-HardwareMemory system_ram;
-HardwareMemory blip_rom;
+char emu_log_buffer[EMU_LOG_BUFFER_SIZE] = {0};
+EmuLogFunction emu_log_function = fprintf;
 
-u64 cycle_count = 0;
-
-bool dump_regs_after_cycle = false;
-bool auto_disassemble = false;
+bool opt_dump_regs_after_cycle = false;
+bool opt_auto_disassemble = false;
+bool opt_headless = false;
 
 struct arg_file* cli_blip;
 struct arg_lit* cli_auto_dump_regs;
 struct arg_lit* cli_auto_disasm;
+struct arg_lit* cli_headless;
 struct arg_end* cli_end;
 
 #define ITERATIONS 80
@@ -36,95 +30,53 @@ int main(int argc, char* argv[]) {
 		cli_blip = arg_filen(NULL, "blip", "<file>", 1, 1, "BLIP rom file"),
 		cli_auto_dump_regs = arg_litn("r", "dump-regs", 0, 1, "automatically dump registers by the end of each cycle"),
 		cli_auto_disasm = arg_litn("d", "auto-disasm", 0, 1, "automatically disassemble the RIP at the beginning of each cycle"),
-		cli_end = arg_end(1)
+		cli_headless = arg_litn("h", "headless", 0, 1, "run in headless mode (no gui)"),
+		cli_end = arg_end(4)
 	};
 
-	log_emu_target = stumpless_open_stdout_target("emu");
-	log_cpu_target = stumpless_open_stdout_target("cpu");
+	// log_emu_target = stumpless_open_stdout_target("emu");
+	// log_cpu_target = stumpless_open_stdout_target("cpu");
 
 	if(arg_parse(argc, argv, argt) > 0) {
 		printf("Usage:\n");
 		arg_print_syntax(stdout, argt, "\n");
 		goto exit;
 	} else {
-		dump_regs_after_cycle = cli_auto_dump_regs->count > 0;
-		auto_disassemble = cli_auto_disasm->count > 0;
+		opt_dump_regs_after_cycle = cli_auto_dump_regs->count > 0;
+		opt_auto_disassemble = cli_auto_disasm->count > 0;
+		opt_headless = cli_headless->count > 0;
 	}
 
-	EMU_INFO("BLIP ROM file name: %s", cli_blip->filename[0]);
+	EMU_INFO("initialising emulator");
+	emu_init();
 
-	EMU_INFO("initialising memory");
-	mem_init(&user_ram, USER_RAM_SIZE, true);
-	mem_init(&system_ram, SYSTEM_RAM_SIZE, true);
-	mem_init(&blip_rom, BLIP_ROM_SIZE, false);
-
-	EMU_INFO("user RAM size: %#010x", user_ram.size);
-	EMU_INFO("system RAM size: %#010x", system_ram.size);
-	EMU_INFO("BLIP ROM size: %#010x", blip_rom.size);
-
-	{
-		EMU_INFO("reading BLIP ROM data from file");
-
-		FILE* rom = fopen(cli_blip->filename[0], "r");
-		assert(rom);
-
-		fseek(rom, 0, SEEK_END);
-		usize rom_size = ftell(rom);
-		fseek(rom, 0, SEEK_SET);
-
-		void* rom_data = malloc(rom_size);
-		fread(rom_data, 1, rom_size, rom);
-		fclose(rom);
-
-		EMU_INFO("writing BLIP ROM data to memory");
-		memcpy(blip_rom.ptr, rom_data, rom_size);
+	if(!opt_headless) {
+		EMU_INFO("initialising GUI");
+		
+		if(!gui_init()) {
+			EMU_ERR("GUI initialisation failed");
+			opt_headless = true;
+			emu_run = true;
+		} else {
+			gui_run(emu_iter);
+		}
 	}
 
-	EMU_INFO("cpu init");
-	cu_init();
-
-#ifdef ITERATIONS
-	for(int i = 0; i < ITERATIONS; i++) {
-#else
-	while(true) {
-#endif
-
-		if(auto_disassemble) {
-			word inst_data = 0;
-			dbg_cpu_get_rip_data32(&inst_data);
-
-			DebugDasmInstruction inst;
-			dbg_disasm_init(&inst);
-			dbg_disasm_inst(&inst, inst_data);
-
-			EMU_INFO("-- %08X: %08X %s %s%s %s%s %s",
-				cu_read_reg(REG_RIP), inst_data,
-				inst.name,
-				inst.param0,
-				inst.param1[0] == '\0' ? "" : ",", inst.param1,
-				inst.param2[0] == '\0' ? "" : ",", inst.param2
-			);
-
-			dbg_disasm_free(&inst);
+	if(opt_headless) {
+	#ifdef ITERATIONS
+		for(int i = 0; i < ITERATIONS; i++) {
+	#else
+		while(true) {
+	#endif
+			emu_iter();
 		}
-
-		cu_step();
-
-		if(dump_regs_after_cycle) {
-			printf("cycle %lu reg dump:\n", cycle_count);
-			dbg_cpu_dump_regs(stdout);
-			printf("\n");
-		}
-
-		cycle_count++;
 	}
 
 	EMU_INFO("\nGOODBYE :)");
-	EMU_INFO("Total cycles: %lu\n", cycle_count);
+	EMU_INFO("Total cycles: %lu\n", emu_iter_count);
 	dbg_cpu_dump_regs(stdout);
 
 exit: ;
 	arg_freetable(argt, sizeof(argt) / sizeof(argt[0]));
-	stumpless_free_all();
 	return 0;
 }

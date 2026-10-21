@@ -34,7 +34,7 @@ DebugRegisterTableEntry dbg_registers[MAX_REGISTERS] = {
 	{ "rfi0" },
 	{ "rfi1" },
 	{ "rfo0" },
-	{ "rfi1" },
+	{ "rfo1" },
 	{ "??" },
 	{ "rfp" },
 	{ "rrap" },

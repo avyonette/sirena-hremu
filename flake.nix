@@ -40,6 +40,14 @@
 						libcxx
 
 						zlog
+						libGL
+						SDL2
+						freetype
+						libGLU
+						libpng
+						libxinerama
+						fontconfig
+						libx11
 					];
 
 					LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;

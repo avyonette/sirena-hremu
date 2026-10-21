@@ -45,3 +45,16 @@ void dbg_cpu_get_rip_data32(word* data) {
 	
 	*data = *data_ptr;
 }
+
+void dbg_cpu_read32_v(v_addr addr, word* data) {
+	assert(data);
+
+	word* data_ptr = g2h_phy_addr(mmu_tavp(addr, 'r'));
+	
+	if(data_ptr == NULL) {
+		*data = 0;
+		return;
+	}
+	
+	*data = *data_ptr;
+}

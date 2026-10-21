@@ -180,9 +180,13 @@ void* g2h_phy_addr(p_addr address) {
 	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) {
 		return 0;
 	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) {
-		return user_ram.ptr + address - PMM0_USER_BASE;
+		p_addr rel_addr = address - PMM0_USER_BASE;
+		if(rel_addr >= user_ram.size) return 0; // TODO #MAE (in MMU) on memory access out of physical limits?
+		return user_ram.ptr + rel_addr;
 	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) {
-		return blip_rom.ptr + address - PMM0_BLIP_BASE;
+		p_addr rel_addr = address - PMM0_BLIP_BASE;
+		if(rel_addr >= blip_rom.size) return 0;
+		return blip_rom.ptr + rel_addr;
 	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) {
 		return 0;
 	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) {
@@ -191,7 +195,9 @@ void* g2h_phy_addr(p_addr address) {
 	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) {
 		return l1_pmm.ptr + address - PMM0_PMM1_BASE;
 	} else {
-		return system_ram.ptr + address - PMM0_SYSTEM_BASE;
+		p_addr rel_addr = address - PMM0_SYSTEM_BASE;
+		if(rel_addr >= system_ram.size) return 0;
+		return system_ram.ptr + rel_addr;
 	}
 }
 
