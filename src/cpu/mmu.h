@@ -13,17 +13,38 @@
 #define PMM0_BLIP_LIMIT 0xFFA10000
 
 #define PMM0_R1_BASE 0xFFA10000
-#define PMM0_R1_LIMIT 0xFFFDFC00
+#define PMM0_R1_LIMIT 0xFFFDE000
 
-#define PMM0_SPPBC_BASE 0xFFFDFC00
-#define PMM0_SPPBC_LIMIT 0xFFFDFE00
+// #define PMM0_SPPBC_BASE 0xFFFDFC00
+// #define PMM0_SPPBC_LIMIT 0xFFFDFE00
 
-#define PMM0_PMM1_BASE 0xFFFDFE00
-#define PMM0_PMM1_LIMIT 0xFFFE0000
+#define PMM0_PMM1_BASE 0xFFFDE000
+#define PMM0_PMM1_LIMIT 0xFFFDE200
+
+#define PMM0_R2_BASE 0xFFFDE200
+#define PMM0_R2_LIMIT 0xFFFE0000
 
 #define PMM0_SYSTEM_BASE 0xFFFE0000
 #define PMM0_SYSTEM_LIMIT 0xFFFFFFFF
 
+#pragma pack(push, 1)
+typedef enum PMM1_Target {
+	NONE,
+	UART,
+	SPI,
+	SPPBC_MAP,
+	SPPBC,
+} PMM1_Target;
+
+typedef struct PMM1_Entry {
+	PMM1_Target tg : 4;
+	u32 _reserved_0 : 20;
+	p_addr bs : 20;
+	p_addr lm : 20;
+} PMM1_Entry;
+#pragma pack(pop)
+
+#define PMM1_ENTRY_COUNT 64
 extern HardwareMemory l1_pmm;
 
 p_addr mmu_tavp(v_addr address, char purpose);

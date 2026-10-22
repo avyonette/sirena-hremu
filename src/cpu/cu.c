@@ -14,6 +14,8 @@ word rfp = 0;
 word rrap = 0;
 word rz = 0;
 
+void _cu_write_reg_direct(u8 idx, word value);
+
 void cu_init() {
 	// create default register frame
 	RegisterFrame rf = {
@@ -35,6 +37,9 @@ void cu_init() {
 	// set default global register values
 	rfp = PMM0_SYSTEM_BASE;
 	rrap = 0x0;
+
+	// initialise level-1 PMM
+	mem_initc(&l1_pmm, PMM1_ENTRY_COUNT * sizeof(PMM1_Entry), true);
 }
 
 void cu_step() {

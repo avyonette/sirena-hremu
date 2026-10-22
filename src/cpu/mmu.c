@@ -5,54 +5,125 @@
 #include "mem/rom.h"
 #include <string.h>
 
-#define READ_REGION(address, size) \
-	word cpl = cu_read_reg(REG_RPL);\
-	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
-		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
-		return 0; \
-	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
-		return mem_read##size(&user_ram, address - PMM0_USER_BASE); \
-	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
-		return mem_read##size(&blip_rom, address - PMM0_BLIP_BASE); \
-	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) { \
-		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
-		return 0; \
-	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
-		assert(false && "not implemented"); /* TODO SPPBC map */ \
-		return 0; \
-	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
-		return mem_read##size(&l1_pmm, address - PMM0_PMM1_BASE); \
-	} else { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return 0; }\
-		return mem_read##size(&system_ram, address - PMM0_SYSTEM_BASE); \
+typedef byte (*MemRead8Fn)(HardwareMemory*, p_addr);
+typedef half_word (*MemRead16Fn)(HardwareMemory*, p_addr);
+typedef word (*MemRead32Fn)(HardwareMemory*, p_addr);
+
+typedef void (*MemWrite8Fn)(HardwareMemory*, p_addr, byte);
+typedef void (*MemWrite16Fn)(HardwareMemory*, p_addr, half_word);
+typedef void (*MemWrite32Fn)(HardwareMemory*, p_addr, word);
+
+#define SWITCH_ADDRESS_REGION(address, r0, user, blip, r1, pmm1, r2, sys) \
+	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) {\
+		r0\
+	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) {\
+		user\
+	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) {\
+		blip\
+	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) {\
+		r1\
+	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) {\
+		pmm1\
+	} else if(address >= PMM0_R2_BASE && address < PMM0_R2_LIMIT) {\
+		r2\
+	} else {\
+		sys\
 	}
 
-#define WRITE_REGION(address, size, data) \
-	word cpl = cu_read_reg(REG_RPL);\
-	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) { \
-		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
-		return false;\
-	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) { \
-		mem_write##size(&user_ram, address - PMM0_USER_BASE, data); \
-	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) { \
-		cu_raise_int(INT_MAE, address, INT_MAE_1_WRITE_TO_ROM); \
-		return false;\
-	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) { \
-		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS); \
-		return false;\
-	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
-		assert(false && "not implemented"); /* TODO SPPBC map */ \
-	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
-		mem_write##size(&l1_pmm, address - PMM0_PMM1_BASE, data); \
-	} else { \
-		if(cpl != PL_1) { cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1)); return false; }\
-		mem_write##size(&system_ram, address - PMM0_SYSTEM_BASE, data); \
+#define SWITCH_MEM_IO(mem, addr, rw, size_bits, io) \
+	switch(size_bits) {\
+		case 8: {\
+			if(!rw) *((byte*) io) = mem_read8(mem, addr);\
+			else mem_write8(mem, addr, *((byte*) io));\
+			break;\
+		}\
+		case 16: {\
+			if(!rw) *((half_word*) io) = mem_read16(mem, addr);\
+			else mem_write16(mem, addr, *((half_word*) io));\
+			break;\
+		}\
+		case 32: {\
+			if(!rw) *((word*) io) = mem_read32(mem, addr);\
+			else mem_write32(mem, addr, *((word*) io));\
+			break;\
+		}\
+		default:\
+			assert(false);\
 	}
+
+bool _mmu_hw_address_io(p_addr address, bool read_write, u8 size_bits, void* io) {
+	assert(io);
+
+	word cpl = cu_read_reg(REG_RPL);
+
+	SWITCH_ADDRESS_REGION(
+		address,
+		{
+			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+			return false;
+		},
+		{
+			for(usize i = 0; i < PMM1_ENTRY_COUNT; i++) {
+				PMM1_Entry* entry = (PMM1_Entry*) l1_pmm.ptr + (i * sizeof(PMM1_Entry));
+
+				if(entry->tg != NONE && entry->bs >= address && address < entry->lm) {
+					switch(entry->tg) {
+						case UART:
+						case SPI:
+						case SPPBC_MAP:
+						case SPPBC:
+							assert(false && "not implemented");
+							return false;
+						default:
+							assert(false);
+							return false;
+					}
+				}
+
+				SWITCH_MEM_IO(&user_ram, address - PMM0_USER_BASE, read_write, size_bits, io);
+				return true;
+			}
+		},
+		{
+			if(cpl != PL_1) {
+				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+				return false;
+			}
+
+			SWITCH_MEM_IO(&blip_rom, address - PMM0_BLIP_BASE, read_write, size_bits, io);
+			return true;
+		},
+		{
+			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+			return false;
+		},
+		{
+			if(cpl != PL_1) {
+				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+				return false;
+			}
+
+			SWITCH_MEM_IO(&l1_pmm, address - PMM0_PMM1_BASE, read_write, size_bits, io);
+			return true;
+		},
+		{
+			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+			return false;
+		},
+		{
+			if(cpl != PL_1) {
+				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+				return false;
+			}
+
+			SWITCH_MEM_IO(&system_ram, address - PMM0_SYSTEM_BASE, read_write, size_bits, io);
+			return true;
+		}
+	);
+
+	assert(false);
+	return false;
+}
 
 // the level-1 PMM is meant to be stored in the CPU itself so this is fine
 HardwareMemory l1_pmm = {0};
@@ -130,7 +201,9 @@ p_addr mmu_tavp(v_addr address, char purpose) {
 }
 
 byte mmu_mread8(p_addr address) {
-	READ_REGION(address, 8);
+	byte out = 0;
+	_mmu_hw_address_io(address, false, 8, &out);
+	return out;
 }
 
 half_word mmu_mread16(p_addr address) {
@@ -139,7 +212,9 @@ half_word mmu_mread16(p_addr address) {
 		return 0;
 	}
 
-	READ_REGION(address, 16);
+	half_word out = 0;
+	_mmu_hw_address_io(address, false, 16, &out);
+	return out;
 }
 
 word mmu_mread32(p_addr address) {
@@ -148,12 +223,13 @@ word mmu_mread32(p_addr address) {
 		return 0;
 	}
 
-	READ_REGION(address, 32);
+	word out = 0;
+	_mmu_hw_address_io(address, false, 32, &out);
+	return out;
 }
 
 bool mmu_mwrite8(p_addr address, byte data) {
-	WRITE_REGION(address, 8, data);
-	return true;
+	return _mmu_hw_address_io(address, true, 8, &data);
 }
 
 bool mmu_mwrite16(p_addr address, half_word data) {
@@ -162,8 +238,7 @@ bool mmu_mwrite16(p_addr address, half_word data) {
 		return false;
 	}
 
-	WRITE_REGION(address, 16, data);
-	return true;
+	return _mmu_hw_address_io(address, true, 16, &data);
 }
 
 bool mmu_mwrite32(p_addr address, word data) {
@@ -172,33 +247,32 @@ bool mmu_mwrite32(p_addr address, word data) {
 		return false;
 	}
 
-	WRITE_REGION(address, 32, data);
-	return true;
+	return _mmu_hw_address_io(address, true, 32, &data);
 }
 
 void* g2h_phy_addr(p_addr address) {
-	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) {
-		return 0;
-	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) {
-		p_addr rel_addr = address - PMM0_USER_BASE;
-		if(rel_addr >= user_ram.size) return 0; // TODO #MAE (in MMU) on memory access out of physical limits?
-		return user_ram.ptr + rel_addr;
-	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) {
-		p_addr rel_addr = address - PMM0_BLIP_BASE;
-		if(rel_addr >= blip_rom.size) return 0;
-		return blip_rom.ptr + rel_addr;
-	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) {
-		return 0;
-	} else if(address >= PMM0_SPPBC_BASE && address < PMM0_SPPBC_LIMIT) {
-		assert(false && "not implemented"); /* TODO SPPBC map */
-		return 0;
-	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) {
-		return l1_pmm.ptr + address - PMM0_PMM1_BASE;
-	} else {
-		p_addr rel_addr = address - PMM0_SYSTEM_BASE;
-		if(rel_addr >= system_ram.size) return 0;
-		return system_ram.ptr + rel_addr;
-	}
+	SWITCH_ADDRESS_REGION(
+		address,
+		{ return NULL; },
+		{
+			p_addr rel_addr = address - PMM0_USER_BASE;
+			if(rel_addr >= user_ram.size) return 0; // TODO #MAE (in MMU) on memory access out of physical limits?
+			return user_ram.ptr + rel_addr;
+		},
+		{
+			p_addr rel_addr = address - PMM0_BLIP_BASE;
+			if(rel_addr >= blip_rom.size) return 0;
+			return blip_rom.ptr + rel_addr;
+		},
+		{ return NULL; },
+		{ return l1_pmm.ptr + address - PMM0_PMM1_BASE; },
+		{ return NULL; },
+		{
+			p_addr rel_addr = address - PMM0_SYSTEM_BASE;
+			if(rel_addr >= system_ram.size) return 0;
+			return system_ram.ptr + rel_addr;
+		}
+	);
 }
 
 p_addr h2g_phy_addr(void* address) {
@@ -209,7 +283,6 @@ p_addr h2g_phy_addr(void* address) {
 
 	H2G_BRANCH(PMM0_USER_BASE, user_ram.ptr, user_ram.size);
 	H2G_BRANCH(PMM0_BLIP_BASE, blip_rom.ptr, blip_rom.size);
-	// TODO SPPBC
 	H2G_BRANCH(PMM0_PMM1_BASE, l1_pmm.ptr, l1_pmm.size);
 	H2G_BRANCH(PMM0_SYSTEM_BASE, system_ram.ptr, system_ram.size);
 

@@ -9,6 +9,7 @@ typedef struct HardwareMemory {
 } HardwareMemory;
 
 void mem_init(HardwareMemory* mem, u32 size, bool rw);
+void mem_initc(HardwareMemory* mem, u32 size, bool rw);
 void mem_free(HardwareMemory* mem);
 
 byte mem_read8(HardwareMemory* mem, p_addr address);

@@ -10,6 +10,11 @@ void mem_init(HardwareMemory* mem, u32 size, bool rw) {
 	//memset(mem->ptr, 0, size);
 }
 
+void mem_initc(HardwareMemory* mem, u32 size, bool rw) {
+	mem_init(mem, size, rw);
+	memset(mem->ptr, 0, size);
+}
+
 void mem_free(HardwareMemory* mem) {
 	free(mem->ptr);
 }
