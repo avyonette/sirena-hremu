@@ -1,4 +1,5 @@
 #pragma once
+#include "hw/feature.h"
 #include "mem/mem.h"
 #include <types.h>
 #include <arch_types.h>
@@ -27,18 +28,19 @@
 #define PMM0_SYSTEM_BASE 0xFFFE0000
 #define PMM0_SYSTEM_LIMIT 0xFFFFFFFF
 
-#pragma pack(push, 1)
-typedef enum PMM1_Target {
-	NONE,
-	UART,
-	SPI,
-	SPPBC_MAP,
-	SPPBC,
-} PMM1_Target;
+// typedef enum PMM1_Target {
+// 	NONE,
+// 	UART,
+// 	SPI,
+// 	SPPBC_MAP,
+// 	SPPBC,
+// } PMM1_Target;
 
+#pragma pack(push, 1)
 typedef struct PMM1_Entry {
-	PMM1_Target tg : 4;
-	u32 _reserved_0 : 20;
+	HardwareFeature tg : 8;
+	u8 idx : 8;
+	u32 _reserved_0 : 8;
 	p_addr bs : 20;
 	p_addr lm : 20;
 } PMM1_Entry;

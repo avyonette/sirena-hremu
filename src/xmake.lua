@@ -6,6 +6,7 @@ target("hremu")
 		"cpu/*.c",
 		"dbg/*.c",
 		"gui/*.c",
+		"hw/*.c",
 		"isa/*.c",
 		"mem/*.c"
 	)

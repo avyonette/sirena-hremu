@@ -87,7 +87,7 @@ DebugInstructionTableEntry dbg_instructions[MAX_INSTRUCTIONS] = {
 	{ CORE32_OPSET, CORE32_SHLI, CORE32_SHLI_SHRI, "shri", true, true, false },
 	{ CORE32_OPSET, CORE32_SHLI, CORE32_SHLI_SHSRI, "shsri", true, true, false },
 	{ CORE32_OPSET, CORE32_INT, 0, "int", true, false, false },
-	{ CORE32_OPSET, CORE32_INTI, 0, "inti", true, false, false },
+	{ CORE32_OPSET, CORE32_INTI, 0, "inti", false, true, false },
 	{ CORE32_OPSET, CORE32_INTM, 0, "intm", true, true, false },
 	{ CORE32_OPSET, CORE32_RETI, 0, "reti", false, false, false },
 	{ CORE32_OPSET, CORE32_MCW, CORE32_MCW_MCW, "mcw", true, true, false },

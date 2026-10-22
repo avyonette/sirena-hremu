@@ -21,14 +21,14 @@ AG_Button* vc_btn_step = NULL;
 
 void _gui_vm_ctrl_btn_toggle(AG_Event* e) {
 	if(emu_run) {
+		cu_pause();
 		emu_run = false;
 		EMU_INFO("VM paused");
 	} else {
+		cu_resume();
 		emu_run = true;
 		EMU_INFO("VM resumed");
 	}
-
-	AG_ButtonText(vc_btn_toggle, "%s", emu_run ? "Pause" : "Resume");
 }
 
 void _gui_vm_ctrl_btn_step(AG_Event* e) {
@@ -36,7 +36,9 @@ void _gui_vm_ctrl_btn_step(AG_Event* e) {
 
 	word rip_prev = cu_read_reg(REG_RIP);
 	emu_run = true;
+	cu_resume();
 	emu_iter();
+	cu_pause();
 	emu_run = false;
 
 	EMU_INFO("VM step (RIP: %08X->%08X)", rip_prev, cu_read_reg(REG_RIP));
@@ -68,6 +70,8 @@ void gui_vm_ctrl_process() {
 		cu_read_reg(REG_RIP),
 		emu_iter_count
 	);
+
+	AG_ButtonText(vc_btn_toggle, "%s", emu_run ? "Pause" : "Resume");
 }
 
 void gui_vm_ctrl_free() {

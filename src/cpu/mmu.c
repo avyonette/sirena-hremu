@@ -1,9 +1,11 @@
+#include <string.h>
 #include "mmu.h"
 #include "cu.h"
+#include "hw/feature.h"
+#include "hw/pit.h"
 #include "paging.h"
 #include "mem/ram.h"
 #include "mem/rom.h"
-#include <string.h>
 
 typedef byte (*MemRead8Fn)(HardwareMemory*, p_addr);
 typedef half_word (*MemRead16Fn)(HardwareMemory*, p_addr);
@@ -51,75 +53,82 @@ typedef void (*MemWrite32Fn)(HardwareMemory*, p_addr, word);
 			assert(false);\
 	}
 
-bool _mmu_hw_address_io(p_addr address, bool read_write, u8 size_bits, void* io) {
+bool _mmu_hw_address_io(p_addr address, bool rw, u8 size_bits, void* io) {
 	assert(io);
 
 	word cpl = cu_read_reg(REG_RPL);
+	
+	if(address >= PMM0_R0_BASE && address < PMM0_R0_LIMIT) {
+		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+		return false;
+	} else if(address >= PMM0_USER_BASE && address < PMM0_USER_LIMIT) {
+		for(usize i = 0; i < PMM1_ENTRY_COUNT; i++) {
+			PMM1_Entry* entry = (PMM1_Entry*) l1_pmm.ptr + (i * sizeof(PMM1_Entry));
 
-	SWITCH_ADDRESS_REGION(
-		address,
-		{
-			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
-			return false;
-		},
-		{
-			for(usize i = 0; i < PMM1_ENTRY_COUNT; i++) {
-				PMM1_Entry* entry = (PMM1_Entry*) l1_pmm.ptr + (i * sizeof(PMM1_Entry));
+			// base and limit in entry are 0x1000-aligned and shifted right; need to "restore" them
+			if(entry->tg != 0 && address >= (entry->bs << 12) && address < (entry->lm << 12)) {
+				p_addr address_tg = address - (entry->bs << 12);
+				u8 idx = entry->idx;
 
-				if(entry->tg != NONE && entry->bs >= address && address < entry->lm) {
-					switch(entry->tg) {
-						case UART:
-						case SPI:
-						case SPPBC_MAP:
-						case SPPBC:
-							assert(false && "not implemented");
+				switch(entry->tg) {
+					case FT_PIT: {
+						if(idx >= PIT_COUNT) {
+							cu_raise_int(INT_IOP, address, INT_IOP_0_OUT_OF_RANGE);
 							return false;
-						default:
-							assert(false);
+						}
+
+						if(size_bits != sizeof(word) * 8) {
+							cu_raise_int(INT_IOP, address, INT_IOP_0_WRONG_DATA_SIZE);
 							return false;
+						}
+
+						PIT* pit = &pit_timers[idx];
+
+						if(!rw) *((word*) io) = pit_io_read(pit, address_tg);
+						else pit_io_write(pit, address_tg, *((word*) io));
+
+						return true;
 					}
+					default:
+						cu_raise_int(INT_IOP, INT_IOP_0_UNKNOWN_FEATURE, 0);
+						return false;
 				}
-
-				SWITCH_MEM_IO(&user_ram, address - PMM0_USER_BASE, read_write, size_bits, io);
-				return true;
-			}
-		},
-		{
-			if(cpl != PL_1) {
-				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
-				return false;
 			}
 
-			SWITCH_MEM_IO(&blip_rom, address - PMM0_BLIP_BASE, read_write, size_bits, io);
-			return true;
-		},
-		{
-			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
-			return false;
-		},
-		{
-			if(cpl != PL_1) {
-				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
-				return false;
-			}
-
-			SWITCH_MEM_IO(&l1_pmm, address - PMM0_PMM1_BASE, read_write, size_bits, io);
-			return true;
-		},
-		{
-			cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
-			return false;
-		},
-		{
-			if(cpl != PL_1) {
-				cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
-				return false;
-			}
-
-			SWITCH_MEM_IO(&system_ram, address - PMM0_SYSTEM_BASE, read_write, size_bits, io);
+			SWITCH_MEM_IO(&user_ram, address - PMM0_USER_BASE, rw, size_bits, io);
 			return true;
 		}
-	);
+	} else if(address >= PMM0_BLIP_BASE && address < PMM0_BLIP_LIMIT) {
+		if(cpl != PL_1) {
+			cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+			return false;
+		}
+
+		SWITCH_MEM_IO(&blip_rom, address - PMM0_BLIP_BASE, rw, size_bits, io);
+		return true;
+	} else if(address >= PMM0_R1_BASE && address < PMM0_R1_LIMIT) {
+		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+		return false;
+	} else if(address >= PMM0_PMM1_BASE && address < PMM0_PMM1_LIMIT) {
+		if(cpl != PL_1) {
+			cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+			return false;
+		}
+
+		SWITCH_MEM_IO(&l1_pmm, address - PMM0_PMM1_BASE, rw, size_bits, io);
+		return true;
+	} else if(address >= PMM0_R2_BASE && address < PMM0_R2_LIMIT) {
+		cu_raise_int(INT_MAE, address, INT_MAE_1_INVALID_ADDRESS);
+		return false;
+	} else {
+		if(cpl != PL_1) {
+			cu_raise_int(INT_GPE, INT_GPE_0_WRONG_PRIVILEGE, INT_GPE_1(cpl, PL_1));
+			return false;
+		}
+
+		SWITCH_MEM_IO(&system_ram, address - PMM0_SYSTEM_BASE, rw, size_bits, io);
+		return true;
+	}
 
 	assert(false);
 	return false;

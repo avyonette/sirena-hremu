@@ -50,6 +50,9 @@ void emu_init() {
 
 	EMU_INFO("cpu init");
 	cu_init();
+
+	EMU_INFO("cpu reset");
+	cu_reset();
 }
 
 void emu_iter() {

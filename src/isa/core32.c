@@ -3,6 +3,7 @@
 #include "cpu/cu.h"
 #include "cpu/int.h"
 #include "cpu/mmu.h"
+#include "hw/feature.h"
 #include "isa/op.h"
 
 bool nop(CpuInstruction* inst) {
@@ -17,9 +18,10 @@ bool cpuid(CpuInstruction* inst) {
 		}
 		case CORE32_CPUID_CPUFT: {
 			if(inst->i.vl == 0) {
-				cu_write_reg(inst->i.ds, 0); // currently no features
+				cu_write_reg(inst->i.ds, hwft_get_available_features());
 			} else {
-				cu_raise_int(INT_IOP, INT_IOP_0_UNKNOWN_FEATURE, 0);
+				word ft_info = hwft_get_info(inst->i.vl);
+				cu_write_reg(inst->i.ds, ft_info);
 			}
 
 			return true;
@@ -235,7 +237,7 @@ bool callr(CpuInstruction* inst) {
 	inst->auto_advance = false;
 
 	word current = cu_read_reg(REG_RIP);
-	word target = cu_read_reg(inst->r.ds);
+	word target = inst->j.tg;
 
 	cu_write_reg(REG_RTP, current + 4);
 	cu_write_reg(REG_RIP, current + alu_signe18(target));
@@ -256,7 +258,7 @@ bool ret(CpuInstruction* inst) {
 		if(a < b) { \
 			result |= 1 << 2; \
 		} \
-		if(a > 0) { \
+		if(a > b) { \
 			result |= 1 << 3; \
 		} \
 	}
@@ -436,7 +438,7 @@ bool int_(CpuInstruction* inst) {
 }
 
 bool inti(CpuInstruction* inst) {
-	u8 id = cu_read_reg(inst->i.vl);
+	u8 id = inst->i.vl;
 	IRQ_BODY(id);
 
 	return true;

@@ -4,6 +4,12 @@
 #include "reg.h"
 #include "int.h"
 
+#define CLK_0_FREQ 1000000
+#define CLK_1_FREQ 1000000
+#define CLK_2_FREQ 1000000
+#define CLK_3_FREQ 1000000
+#define CLK_4_FREQ 1000000
+
 #define PL_0 0x00
 #define PL_1 0x01
 
@@ -21,7 +27,11 @@
 extern bool irq_map[INT_MAX + 1];
 
 void cu_init();
+void cu_reset();
 void cu_step();
+
+void cu_pause();
+void cu_resume();
 
 void cu_raise_int(u8 id, word rfi0, word rfi1);
 void cu_enable_irh(u8 id, bool enable);

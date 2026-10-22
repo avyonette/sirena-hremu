@@ -1,5 +1,8 @@
 #include <string.h>
+#include "cpu/clk.h"
 #include "cpu/int.h"
+#include "emu.h"
+#include "hw/pit.h"
 #include "log.h"
 #include "mem/mem.h"
 #include "mem/ram.h"
@@ -14,9 +17,24 @@ word rfp = 0;
 word rrap = 0;
 word rz = 0;
 
+usize cu_clk_0 = 0;
+usize cu_clk_1 = 1;
+usize cu_clk_2 = 2;
+usize cu_clk_3 = 3;
+usize cu_clk_4 = 4;
+
 void _cu_write_reg_direct(u8 idx, word value);
 
 void cu_init() {
+	// init clocks
+	//clk_create(cu_clk_0, CLK_0_FREQ, );
+	clk_create(cu_clk_1, CLK_1_FREQ, pit_tick_0, false);
+	clk_create(cu_clk_2, CLK_2_FREQ, pit_tick_1, false);
+	clk_create(cu_clk_3, CLK_3_FREQ, pit_tick_2, false);
+	clk_create(cu_clk_4, CLK_4_FREQ, pit_tick_3, false);
+}
+
+void cu_reset() {
 	// create default register frame
 	RegisterFrame rf = {
 		.r0 = 0, .r1 = 0, .r2 = 0, .r3 = 0, .r4 = 0, .r5 = 0, .r6 = 0, .r7 = 0,
@@ -32,14 +50,21 @@ void cu_init() {
 	};
 
 	// write default register frame to the beginning of system RAM
-	memcpy(g2h_phy_addr(PMM0_SYSTEM_BASE), &rf, sizeof(RegisterFrame));
+	memcpy(g2h_phy_addr(0xFFFFFF00), &rf, sizeof(RegisterFrame));
 
 	// set default global register values
-	rfp = PMM0_SYSTEM_BASE;
+	rfp = 0xFFFFFF00;
 	rrap = 0x0;
 
 	// initialise level-1 PMM
 	mem_initc(&l1_pmm, PMM1_ENTRY_COUNT * sizeof(PMM1_Entry), true);
+
+	// enable clocks
+	clk_resume(cu_clk_0);
+	clk_resume(cu_clk_1);
+	clk_resume(cu_clk_2);
+	clk_resume(cu_clk_3);
+	clk_resume(cu_clk_4);
 }
 
 void cu_step() {
@@ -72,22 +97,24 @@ interrupts: ;
 	*/
 	for(u8 i = 0; i < INT_MAX; i++) {
 		if(irq_map[i]) {
-			if(cu_read_reg(rrap)) {
+			if(rrap > 0) {
 				InterruptRoutineArrayEntry irae;
 				g2h_read32(rrap + (i * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
 				
 				if(irae.en) {
-					_cu_write_reg_direct(REG_RPL, 1);
+					word prev_rfp = cu_read_reg(REG_RFP);
+
 					_cu_write_reg_direct(REG_RFP, irae.rfp);
+					_cu_write_reg_direct(REG_RPL, 1);
 					_cu_write_reg_direct(REG_RIP, irae.rh);
+					_cu_write_reg_direct(REG_RLFP, prev_rfp);
 
 					CPU_INFO("handling INT %#02x (rfp=%#10x, rh=%#10x)", i, irae.rfp, irae.rh);
 
+					irq_map[i] = false;
 					goto fetch; // need to handle this interrupt now
 				}
 			}
-			
-			irq_map[i] = 0;
 		}
 	}
 
@@ -98,13 +125,36 @@ advance: ;
 	}
 }
 
+void cu_pause() {
+	clk_pause(cu_clk_0);
+	clk_pause(cu_clk_1);
+	clk_pause(cu_clk_2);
+	clk_pause(cu_clk_3);
+	clk_pause(cu_clk_4);
+}
+
+void cu_resume() {
+	clk_resume(cu_clk_0);
+	clk_resume(cu_clk_1);
+	clk_resume(cu_clk_2);
+	clk_resume(cu_clk_3);
+	clk_resume(cu_clk_4);
+}
+
 void cu_raise_int(u8 id, word rfi0, word rfi1) {
 	irq_map[id] = true;
 	CPU_INFO("INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
 	
-	if(rrap) {
+	if(id == INT_DBG) { // pause execution on #DBG
+		cu_pause();
+		emu_run = false;
+	}
+
+	if(rrap > 0) {
 		InterruptRoutineArrayEntry irae;
 		g2h_read32(rrap + (id * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
+
+		if(!irae.en) return;
 
 		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi0), rfi0);
 		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi1), rfi1);

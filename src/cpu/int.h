@@ -18,6 +18,9 @@
 #define INT_IOP_0_WRITE_TO_RO_REG 0x00
 #define INT_IOP_0_FP_OUTSIDE_SYSTEM 0x01
 #define INT_IOP_0_UNKNOWN_FEATURE 0x02
+#define INT_IOP_0_OUT_OF_RANGE 0x03
+#define INT_IOP_0_WRONG_DATA_SIZE 0x04
+#define INT_IOP_0_OTHER 0xFF
 
 #define INT_UDO_0(op, os) (os & 0b1111) | ((op & 0b11111) << 4)
 
