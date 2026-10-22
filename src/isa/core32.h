@@ -5,6 +5,8 @@
 
 #define CORE32_NOP 0x00
 #define CORE32_CPUID 0x01
+#define CORE32_CPUID_CPUID 0x00
+#define CORE32_CPUID_CPUFT 0x01
 
 #define CORE32_LDW 0x02
 #define CORE32_LDW_LDW 0x00

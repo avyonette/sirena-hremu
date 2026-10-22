@@ -10,8 +10,23 @@ bool nop(CpuInstruction* inst) {
 }
 
 bool cpuid(CpuInstruction* inst) {
-	cu_write_reg(inst->r.ds, 1); // CORE32 set
-	return true;
+	switch(inst->i.ff) {
+		case CORE32_CPUID_CPUID: {
+			cu_write_reg(inst->i.ds, 1); // CORE32 set
+			return true;
+		}
+		case CORE32_CPUID_CPUFT: {
+			if(inst->i.vl == 0) {
+				cu_write_reg(inst->i.ds, 0); // currently no features
+			} else {
+				cu_raise_int(INT_IOP, INT_IOP_0_UNKNOWN_FEATURE, 0);
+			}
+
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool ldw(CpuInstruction* inst) {
@@ -479,7 +494,7 @@ bool undefined(CpuInstruction* inst) {
 
 OpSetEntry core32_opset[OPSET_SIZE] = {
 	{ REGISTER, nop },
-	{ REGISTER, cpuid },
+	{ IMMEDIATE, cpuid },
 	{ REGISTER, ldw },
 	{ IMMEDIATE, lvi },
 	{ IMMEDIATE, lli },
