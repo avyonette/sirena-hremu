@@ -3,8 +3,8 @@
 #include <types.h>
 
 #define INT_MAX 0xFF
-#define INT_USER_MIN 0x20
-#define INT_USER_MAX INT_MAX
+#define INT_USER_MIN 0x10
+#define INT_USER_MAX 0x8F
 
 #define INT_UDO 0x01
 #define INT_DBG 0x02
@@ -20,6 +20,7 @@
 #define INT_IOP_0_UNKNOWN_FEATURE 0x02
 #define INT_IOP_0_OUT_OF_RANGE 0x03
 #define INT_IOP_0_WRONG_DATA_SIZE 0x04
+#define INT_IOP_0_UART_WRITE_DURING_TRANSFER 0xFE
 #define INT_IOP_0_OTHER 0xFF
 
 #define INT_UDO_0(op, os) (os & 0b1111) | ((op & 0b11111) << 4)

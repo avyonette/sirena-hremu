@@ -3,6 +3,7 @@
 #include "cu.h"
 #include "hw/feature.h"
 #include "hw/pit.h"
+#include "hw/uart.h"
 #include "paging.h"
 #include "mem/ram.h"
 #include "mem/rom.h"
@@ -86,6 +87,22 @@ bool _mmu_hw_address_io(p_addr address, bool rw, u8 size_bits, void* io) {
 
 						if(!rw) *((word*) io) = pit_io_read(pit, address_tg);
 						else pit_io_write(pit, address_tg, *((word*) io));
+
+						return true;
+					}
+					case FT_UART: {
+						if(idx >= UART_COUNT) {
+							cu_raise_int(INT_IOP, address, INT_IOP_0_OUT_OF_RANGE);
+							return false;
+						}
+
+						if(size_bits != sizeof(word) * 8) {
+							cu_raise_int(INT_IOP, address, INT_IOP_0_WRONG_DATA_SIZE);
+							return false;
+						}
+
+						if(!rw) *((word*) io) = uart_io_read(address_tg);
+						else uart_io_write(address_tg, *((word*) io));
 
 						return true;
 					}

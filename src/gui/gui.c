@@ -10,6 +10,7 @@
 #include "gui/mem_view.h"
 #include "gui/prog_view.h"
 #include "gui/registers.h"
+#include "gui/virt_mon.h"
 #include "vm_ctrl.h"
 #include "log.h"
 
@@ -48,6 +49,7 @@ bool gui_init() {
 	if(!gui_mem_view_init()) return false;
 	if(!gui_prog_view_init()) return false;
 	if(!gui_registers_init()) return false;
+	if(!gui_virt_mon_init()) return false;
 	if(!gui_vm_ctrl_init()) return false;
 
 	return true;
@@ -84,6 +86,7 @@ void gui_run(void (*iter)()) {
 		gui_mem_view_process();
 		gui_prog_view_process();
 		gui_registers_process();
+		gui_virt_mon_process();
 		gui_vm_ctrl_process();
 
 		AG_WindowDrawQueued();
@@ -98,6 +101,7 @@ void gui_free() {
 	gui_mem_view_free();
 	gui_prog_view_free();
 	gui_registers_free();
+	gui_virt_mon_free();
 	gui_vm_ctrl_free();
 
 	AG_DestroyGraphics();
