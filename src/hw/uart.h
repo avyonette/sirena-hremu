@@ -3,6 +3,7 @@
 #include "gpio.h"
 
 #define UART_COUNT 1
+#define UART_PIT 0
 
 #define UART_RX GP_0
 #define UART_TX GP_1
@@ -11,7 +12,8 @@
 #define UART_START_BIT GP_LOW
 #define UART_STOP_BIT GP_HIGH
 
-#define INT_UART_RX 0x90
+#define INT_UART_TICK 0x90
+#define INT_UART_RX 0x91
 
 typedef enum UartParityBit {
 	UART_PARITY_NONE,
@@ -34,6 +36,12 @@ typedef enum UartTxState {
 typedef struct Uart {
 	UartParityBit parity;
 
+	u8 rx_pin;
+	u8 tx_pin;
+
+	u8 rx_int;
+	void (*rx_callback)(u8);
+
 	UartRxState rx_state;
 	u8 rx_data;
 	bool rx_prev_pin;
@@ -41,6 +49,7 @@ typedef struct Uart {
 
 	UartTxState tx_state;
 	u8 tx_data;
+	u8 _tx_data;
 	u8 tx_bits_remaining;
 } Uart;
 
@@ -50,12 +59,12 @@ typedef struct UartConfigurePacket {
 	u8 _reserved_0 : 5;
 } UartConfigurePacket;
 
-extern Uart uart0;
+extern Uart uart[UART_COUNT];
 
-//void uart_configure(u32 baud_rate, UartParityBit parity);
+//void uart_configure(Uart* uart, u32 baud_rate, UartParityBit parity);
 
-void uart_tick_rx();
-void uart_tick_tx();
+void uart_tick_rx(Uart* uart);
+void uart_tick_tx(Uart* uart);
 
-word uart_io_read(p_addr address);
-void uart_io_write(p_addr address, word data);
+word uart_io_read(Uart* uart, p_addr address);
+void uart_io_write(Uart* uart, p_addr address, word data);

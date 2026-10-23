@@ -101,8 +101,10 @@ bool _mmu_hw_address_io(p_addr address, bool rw, u8 size_bits, void* io) {
 							return false;
 						}
 
-						if(!rw) *((word*) io) = uart_io_read(address_tg);
-						else uart_io_write(address_tg, *((word*) io));
+						Uart* u = &uart[0];
+
+						if(!rw) *((word*) io) = uart_io_read(u, address_tg);
+						else uart_io_write(u, address_tg, *((word*) io));
 
 						return true;
 					}

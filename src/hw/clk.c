@@ -92,7 +92,7 @@ void clk_create(usize id, usize frequency_hz, ClockCallbackFn callback, bool ini
 	ClockInfo info = {
 		.id = timer_id,
 		.th = 0,
-		.paused = initial_state,
+		.paused = !initial_state,
 		.interval_ns = 1e9 / frequency_hz,
 		.callback = callback
 	};

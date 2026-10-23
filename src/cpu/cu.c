@@ -3,6 +3,7 @@
 #include "cpu/int.h"
 #include "emu.h"
 #include "hw/pit.h"
+#include "hw/uart.h"
 #include "log.h"
 #include "mem/mem.h"
 #include "mem/ram.h"
@@ -130,22 +131,33 @@ void cu_resume() {
 
 void cu_raise_int(u8 id, word rfi0, word rfi1) {
 	irq_map[id] = true;
-	CPU_INFO("INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
 	
-	if(id == INT_DBG) { // pause execution on #DBG
-		cu_pause();
-		emu_run = false;
+	if(id < 0x10) {
+		CPU_INFO("INT %#04x raised (rfi0=%#10x, rfi1=%#10x)", id, rfi0, rfi1);
 	}
 
-	if(rrap > 0) {
-		InterruptRoutineArrayEntry irae;
-		g2h_read32(rrap + (id * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
-
-		if(!irae.en) return;
-
-		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi0), rfi0);
-		mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi1), rfi1);
+	switch(id) {
+		case INT_DBG: { // pause execution on #DBG
+			cu_pause();
+			emu_run = false;
+			break;
+		}
+		case INT_UART_TICK: {
+			uart_tick_tx(&uart[0]);
+			uart_tick_rx(&uart[0]);
+			return;
+		}
 	}
+
+	if(rrap == 0) return;
+
+	InterruptRoutineArrayEntry irae;
+	g2h_read32(rrap + (id * sizeof(InterruptRoutineArrayEntry)), &irae, sizeof(InterruptRoutineArrayEntry));
+
+	if(!irae.en) return;
+
+	mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi0), rfi0);
+	mmu_mwrite32(irae.rfp + offsetof(RegisterFrame, rfi1), rfi1);
 }
 
 void cu_enable_irh(u8 id, bool enable) {

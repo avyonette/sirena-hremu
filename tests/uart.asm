@@ -25,7 +25,7 @@
 
 	; configure packet
 	lui r1, 0x0000 ; parity none
-	lli r1, 9600`16 ; 9600 fits in 16 bits whatever
+	lli r1, 9600`16 ; baud rate
 	stw r0, r1
 
 	; +4 to r0 for TX

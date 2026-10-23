@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "emu.h"
+#include "gui/virt_mon.h"
+#include "hw/clk.h"
+#include "hw/uart.h"
 #include "opts.h"
 #include "log.h"
 #include "mem/mem.h"
@@ -17,6 +20,20 @@ HardwareMemory blip_rom;
 
 u64 emu_iter_count = 0;
 bool emu_run = false;
+
+Uart emu_uart = {0};
+usize emu_uart_clock = 1;
+
+void emu_uart_clock_callback() {
+	if(!emu_run) return;
+
+	uart_tick_tx(&emu_uart);
+	uart_tick_rx(&emu_uart);
+}
+
+void emu_default_uart_callback(u8 data) {
+	printf("UART0: %c\n", data);
+}
 
 void emu_init() {
 	EMU_INFO("BLIP ROM file name: %s", cli_blip->filename[0]);
@@ -47,6 +64,15 @@ void emu_init() {
 		EMU_INFO("writing BLIP ROM data to memory");
 		memcpy(blip_rom.ptr, rom_data, rom_size);
 	}
+
+	/*EMU_INFO("initialising UART and UART clock");
+	emu_uart.parity = UART_PARITY_NONE;
+	emu_uart.oversampling_counter = 0;
+	emu_uart.rx_pin = UART_TX;
+	emu_uart.tx_pin = UART_RX;
+	emu_uart.rx_int = 0;
+	emu_uart.rx_callback = emu_default_uart_callback;
+	clk_create(emu_uart_clock, EMU_UART_BAUD * UART_OVERSAMPLING, emu_uart_clock_callback, true);*/
 
 	EMU_INFO("cpu init");
 	cu_init();
@@ -86,4 +112,16 @@ void emu_iter() {
 	}
 
 	emu_iter_count++;
+}
+
+void emu_uart_rx(char c) {
+	if(opt_headless) printf("%c", c);
+	else gui_virt_mon_uart_rx(c);
+}
+
+void emu_uart_tx(char c) {
+	uart[0].rx_data = c;
+	uart[0].rx_bits_received = 8;
+
+	cu_raise_int(INT_UART_RX, uart->rx_data, 0);
 }
