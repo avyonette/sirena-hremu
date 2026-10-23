@@ -1,5 +1,5 @@
 #include <string.h>
-#include "cpu/clk.h"
+#include "hw/clk.h"
 #include "cpu/int.h"
 #include "emu.h"
 #include "hw/pit.h"
