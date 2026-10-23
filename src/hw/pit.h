@@ -27,7 +27,7 @@ typedef struct PIT {
 	u8 target_int;
 
 	// internal emulator "hardware" implementation specifics
-	struct timespec last_tick;
+	u64 last_tick;
 } PIT;
 
 #define PIT_COUNT 4

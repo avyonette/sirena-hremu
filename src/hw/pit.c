@@ -8,16 +8,15 @@ PIT pit_timers[PIT_COUNT] = {0};
 void pit_tick_single(PIT* pit) {
 	if(pit->mode == PIT_DISABLED) return;
 
-	struct timespec t_now = {0};
-	clock_gettime(CLOCK_MONOTONIC, &t_now);
+	u64 target_ticks = CLK_MAIN_FREQ / pit->tick_rate;
 
-	if(!(t_now.tv_nsec - pit->last_tick.tv_nsec >= 1e9 / pit->tick_rate)) {
+	if(pit->last_tick < target_ticks) {
+		pit->last_tick++;
 		return;
 	}
 
-	clock_gettime(CLOCK_MONOTONIC, &pit->last_tick);
-	EMU_DBG("PIT %p called", pit);
-	
+	pit->last_tick = 0;
+
 	switch(pit->mode) {
 		case PIT_ONE_SHOT: {
 			if(pit->target_int > 0) {
@@ -61,16 +60,23 @@ void pit_io_write(PIT* pit, p_addr address, word data) {
 					cu_raise_int(INT_IOP, INT_IOP_0_OUT_OF_RANGE, 0);
 				} else {
 					pit->mode = cmd_frame->dt;
+					CPU_DBG("Set PIT %p mode to %d", pit, pit->mode);
 				}
 
 				break;
 			}
 			case PIT_CMD_SET_TICK_RATE: {
 				pit->tick_rate = cmd_frame->dt;
+				CPU_DBG("Set PIT %p tick rate to %d", pit, pit->tick_rate);
+
+				if(pit->tick_rate > CLK_MAIN_FREQ) {
+					EMU_WARN("Pit %p has a higher requested tick rate than the main CPU clock (%u>%u)", pit, pit->tick_rate, CLK_MAIN_FREQ);
+				}
 				break;
 			}
 			case PIT_CMD_SET_TARGET_INT: {
 				pit->target_int = cmd_frame->dt;
+				CPU_DBG("Set PIT %p target INT to %d", pit, pit->target_int);
 				break;
 			}
 			case PIT_CMD_GET_TICK_COUNT: {
@@ -79,6 +85,7 @@ void pit_io_write(PIT* pit, p_addr address, word data) {
 			}
 			case PIT_CMD_RESET_COUNTER: {
 				pit->counter = 0;
+				CPU_DBG("Reset PIT %p counter", pit);
 				break;
 			}
 			default:

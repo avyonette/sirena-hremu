@@ -1,0 +1,2 @@
+process hand -p true -s false -n false SIGUSR1
+process hand -p true -s false -n false SIGUSR2

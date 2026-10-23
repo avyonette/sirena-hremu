@@ -43,7 +43,8 @@ bool gui_init() {
 
 	AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
 
-	if(!gui_event_log_init()) return false;
+	// the agar console often freezes when writing a lot of messages, nothing we can really do about it
+	//if(!gui_event_log_init()) return false;
 	if(!gui_mem_view_init()) return false;
 	if(!gui_prog_view_init()) return false;
 	if(!gui_registers_init()) return false;
@@ -79,7 +80,7 @@ void gui_run(void (*iter)()) {
 
 		AG_GetDisplaySize(NULL, &gui_display_width, &gui_display_height);
 
-		gui_event_log_process();
+		//gui_event_log_process();
 		gui_mem_view_process();
 		gui_prog_view_process();
 		gui_registers_process();
@@ -93,7 +94,7 @@ void gui_run(void (*iter)()) {
 }
 
 void gui_free() {
-	gui_event_log_free();
+	//gui_event_log_free();
 	gui_mem_view_free();
 	gui_prog_view_free();
 	gui_registers_free();

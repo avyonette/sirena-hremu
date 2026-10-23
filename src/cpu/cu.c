@@ -17,21 +17,13 @@ word rfp = 0;
 word rrap = 0;
 word rz = 0;
 
-usize cu_clk_0 = 0;
-usize cu_clk_1 = 1;
-usize cu_clk_2 = 2;
-usize cu_clk_3 = 3;
-usize cu_clk_4 = 4;
+usize cu_clk_main = 0;
 
 void _cu_write_reg_direct(u8 idx, word value);
 
 void cu_init() {
 	// init clocks
-	//clk_create(cu_clk_0, CLK_0_FREQ, );
-	clk_create(cu_clk_1, CLK_1_FREQ, pit_tick_0, false);
-	clk_create(cu_clk_2, CLK_2_FREQ, pit_tick_1, false);
-	clk_create(cu_clk_3, CLK_3_FREQ, pit_tick_2, false);
-	clk_create(cu_clk_4, CLK_4_FREQ, pit_tick_3, false);
+	clk_create(cu_clk_main, CLK_MAIN_FREQ, cu_clock, false);
 }
 
 void cu_reset() {
@@ -60,11 +52,7 @@ void cu_reset() {
 	mem_initc(&l1_pmm, PMM1_ENTRY_COUNT * sizeof(PMM1_Entry), true);
 
 	// enable clocks
-	clk_resume(cu_clk_0);
-	clk_resume(cu_clk_1);
-	clk_resume(cu_clk_2);
-	clk_resume(cu_clk_3);
-	clk_resume(cu_clk_4);
+	clk_resume(cu_clk_main);
 }
 
 void cu_step() {
@@ -125,20 +113,19 @@ advance: ;
 	}
 }
 
+void cu_clock() {
+	pit_tick_0();
+	pit_tick_1();
+	pit_tick_2();
+	pit_tick_3();
+}
+
 void cu_pause() {
-	clk_pause(cu_clk_0);
-	clk_pause(cu_clk_1);
-	clk_pause(cu_clk_2);
-	clk_pause(cu_clk_3);
-	clk_pause(cu_clk_4);
+	clk_pause(cu_clk_main);
 }
 
 void cu_resume() {
-	clk_resume(cu_clk_0);
-	clk_resume(cu_clk_1);
-	clk_resume(cu_clk_2);
-	clk_resume(cu_clk_3);
-	clk_resume(cu_clk_4);
+	clk_resume(cu_clk_main);
 }
 
 void cu_raise_int(u8 id, word rfi0, word rfi1) {

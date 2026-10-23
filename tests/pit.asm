@@ -60,7 +60,7 @@
 	lli r1, (0x02`13 @ 0x00`3) ; Tick
 	stw r0, r1
 
-	; the timer should now be enabled and calling INT 0x20 in 1-second intervals
+	; the timer should now be enabled and calling INT 0x20 in 0.1-second intervals
 .end:
 	jr .end
 
