@@ -42,11 +42,11 @@ void cu_reset() {
 		.rfo0 = 0, .rfo1 = 0
 	};
 
-	// write default register frame to the beginning of system RAM
-	memcpy(g2h_phy_addr(0xFFFFFF00), &rf, sizeof(RegisterFrame));
+	// write default register frame
+	memcpy(g2h_phy_addr(0xFFFFFF80), &rf, sizeof(RegisterFrame));
 
 	// set default global register values
-	rfp = 0xFFFFFF00;
+	rfp = 0xFFFFFF80;
 	rrap = 0x0;
 
 	// initialise level-1 PMM

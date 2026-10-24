@@ -46,6 +46,9 @@
 	lvi r1, "O"
 	stw r0, r1
 
+	lvi r1, "\n"
+	stw r0, r1
+
 	jr .loop
 
 #include "common.asm"
